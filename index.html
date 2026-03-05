@@ -733,6 +733,14 @@
           <div class="topic"><div class="topic-dot dot-green"></div>출력 데이터(JSON) 보는 법</div>
           <div class="topic"><div class="topic-dot dot-green"></div>[실습 2] Set 노드로 데이터 가공하기</div>
         </div>
+        <div class="cmd-copy-box">
+          <div class="cmd-label">🌐 HTTP Request 실습에 사용할 테스트 API URL</div>
+          <div class="cmd-row">
+            <code class="cmd-code" id="api-url-cmd">https://jsonplaceholder.typicode.com/posts/1</code>
+            <button class="cmd-copy-btn" onclick="copyApiUrl()">복사</button>
+          </div>
+          <div class="cmd-copied" id="api-url-copied-msg">✅ 복사되었습니다!</div>
+        </div>
       </div>
 
       <!-- 세션 5 -->
@@ -1186,6 +1194,15 @@
       if (open) card.classList.add('open');
       else card.classList.remove('open');
     }
+  }
+
+  function copyApiUrl() {
+    const text = document.getElementById('api-url-cmd').textContent;
+    navigator.clipboard.writeText(text).then(function() {
+      const msg = document.getElementById('api-url-copied-msg');
+      msg.style.display = 'block';
+      setTimeout(function() { msg.style.display = 'none'; }, 2000);
+    });
   }
 
   function copyCmd() {
