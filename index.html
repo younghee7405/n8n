@@ -1,3 +1,4 @@
+
 ﻿<!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -582,6 +583,55 @@
   ::-webkit-scrollbar-track { background: var(--bg); }
   ::-webkit-scrollbar-thumb { background: rgba(0,100,200,0.2); border-radius: 3px; }
   ::-webkit-scrollbar-thumb:hover { background: rgba(0,100,200,0.4); }
+
+  /* CMD COPY BOX */
+  .cmd-copy-box {
+    margin: 14px 0 4px 0;
+    background: #0d1117;
+    border: 1px solid #30363d;
+    border-radius: 10px;
+    padding: 14px 16px 10px 16px;
+  }
+  .cmd-label {
+    font-size: 0.78rem;
+    color: #8b949e;
+    margin-bottom: 8px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+  }
+  .cmd-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .cmd-code {
+    flex: 1;
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-size: 0.82rem;
+    color: #79c0ff;
+    background: transparent;
+    word-break: break-all;
+    user-select: all;
+  }
+  .cmd-copy-btn {
+    flex-shrink: 0;
+    background: #238636;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 5px 14px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .cmd-copy-btn:hover { background: #2ea043; }
+  .cmd-copied {
+    font-size: 0.76rem;
+    color: #3fb950;
+    margin-top: 6px;
+    display: none;
+  }
 </style>
 </head>
 <body>
@@ -628,6 +678,14 @@
           <div class="topic"><div class="topic-dot dot-cyan"></div>Docker 컨테이너 개념 쉽게 이해하기</div>
           <div class="topic"><div class="topic-dot dot-cyan"></div>N8N Docker 명령어 실행 (docker run)</div>
           <div class="topic"><div class="topic-dot dot-cyan"></div>localhost:5678 접속 확인</div>
+        </div>
+        <div class="cmd-copy-box">
+          <div class="cmd-label">💻 PowerShell에서 실행하는 N8N Docker 명령어</div>
+          <div class="cmd-row">
+            <code class="cmd-code" id="n8n-docker-cmd">docker run -it --rm --name n8n -p 5678:5678 -v C:/n8n_data:/home/node/.n8n n8nio/n8n</code>
+            <button class="cmd-copy-btn" onclick="copyCmd()">복사</button>
+          </div>
+          <div class="cmd-copied" id="cmd-copied-msg">✅ 복사되었습니다!</div>
         </div>
       </div>
 
@@ -1128,6 +1186,15 @@
       if (open) card.classList.add('open');
       else card.classList.remove('open');
     }
+  }
+
+  function copyCmd() {
+    const text = document.getElementById('n8n-docker-cmd').textContent;
+    navigator.clipboard.writeText(text).then(function() {
+      const msg = document.getElementById('cmd-copied-msg');
+      msg.style.display = 'block';
+      setTimeout(function() { msg.style.display = 'none'; }, 2000);
+    });
   }
 </script>
 </body>
