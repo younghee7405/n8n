@@ -1,0 +1,1273 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>N8N × Google 자동화 — Sheets · Gmail · Drive</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,700;1,400&family=Noto+Sans+KR:wght@300;400;500;700;900&family=Sora:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root {
+    --bg: #f0f4fb;
+    --bg2: #ffffff;
+    --bg3: #f5f8fe;
+    --accent: #0077cc;
+    --accent2: #6b21d4;
+    --accent3: #c94a10;
+    --green: #00834a;
+    --yellow: #b07800;
+    --text: #1a2340;
+    --muted: #5a6a8a;
+    --border: rgba(0,80,160,0.18);
+    --glow: 0 0 20px rgba(0,119,204,0.25);
+  }
+
+  :root {
+    --bg: #f0f4fb;
+    --bg2: #ffffff;
+    --bg3: #f5f8fe;
+    --accent: #0077cc;
+    --accent2: #6b21d4;
+    --accent3: #c94a10;
+    --green: #00834a;
+    --yellow: #b07800;
+    --text: #1a2340;
+    --muted: #5a6a8a;
+    --border: rgba(0,80,160,0.18);
+    --glow: 0 0 20px rgba(0,119,204,0.25);
+    /* index.html 기반 공통 팔레트 + 가독성용 추가 색상 */
+    --indigo: #6366f1;
+    --cyan: #22d3ee;
+    --red: #ef4444;
+    --purple: #a855f7;
+    --orange: #f59e0b;
+    --dim: #4b5563;
+    --s1: #ffffff;
+    --s2: #f5f8fe;
+    --s3: #eef2ff;
+    --sheets: #34a853;
+    --gmail: #ea4335;
+    --drive: #4285f4;
+  }
+
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text);line-height:1.6;overflow-x:hidden}
+body::before{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background-image:linear-gradient(rgba(99,102,241,0.03) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(99,102,241,0.03) 1px,transparent 1px);
+  background-size:44px 44px;
+}
+/* NAV */
+nav{
+  position:sticky;top:0;z-index:100;
+  background:rgba(6,9,15,0.9);backdrop-filter:blur(16px);
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;padding:0 20px;overflow-x:auto;gap:0;
+}
+.nav-item{
+  padding:15px 16px;font-size:12px;font-weight:500;color:var(--muted);
+  cursor:pointer;white-space:nowrap;border-bottom:2px solid transparent;transition:all .2s;
+}
+.nav-item:hover{color:var(--text)}
+.nav-item.active{color:var(--indigo);border-bottom-color:var(--indigo)}
+
+/* HERO */
+.hero{position:relative;padding:72px 24px 56px;text-align:center;z-index:1}
+.hero::before{
+  content:'';position:absolute;top:-60px;left:50%;transform:translateX(-50%);
+  width:700px;height:320px;
+  background:radial-gradient(ellipse,rgba(52,168,83,0.1) 0%,rgba(66,133,244,0.08) 50%,transparent 70%);
+  pointer-events:none;
+}
+.google-badges{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin-bottom:24px}
+.gbadge{
+  display:inline-flex;align-items:center;gap:6px;
+  font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:1.5px;
+  padding:5px 14px;border-radius:100px;font-weight:700;
+}
+.gb-sheets{background:rgba(52,168,83,0.1);color:var(--sheets);border:1px solid rgba(52,168,83,0.3)}
+.gb-gmail{background:rgba(234,67,53,0.1);color:var(--gmail);border:1px solid rgba(234,67,53,0.3)}
+.gb-drive{background:rgba(66,133,244,0.1);color:var(--drive);border:1px solid rgba(66,133,244,0.3)}
+.hero h1{
+  font-family:'Sora',sans-serif;font-size:clamp(28px,5vw,56px);font-weight:800;
+  letter-spacing:-1px;margin-bottom:12px;
+  background:linear-gradient(135deg,#fff 30%,#34a853 70%,#4285f4);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.hero p{font-size:15px;color:var(--muted);max-width:540px;margin:0 auto}
+
+/* WRAP */
+.wrap{max-width:980px;margin:0 auto;padding:0 24px 80px;position:relative;z-index:1}
+.section{margin-bottom:64px}
+.section-head{
+  display:flex;align-items:center;gap:14px;margin-bottom:28px;
+  padding-bottom:16px;border-bottom:1px solid var(--border);
+}
+.section-icon{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+.si-sheets{background:rgba(52,168,83,0.12);border:1px solid rgba(52,168,83,0.3)}
+.si-gmail{background:rgba(234,67,53,0.1);border:1px solid rgba(234,67,53,0.25)}
+.si-drive{background:rgba(66,133,244,0.1);border:1px solid rgba(66,133,244,0.25)}
+.si-project{background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.25)}
+.si-purple{background:rgba(167,139,250,0.1);border:1px solid rgba(167,139,250,0.25)}
+.section-head h2{font-family:'Sora',sans-serif;font-size:22px;font-weight:700;letter-spacing:-0.3px}
+.section-sub{font-size:13px;color:var(--muted);margin-top:3px}
+.divider{height:1px;background:var(--border);margin:48px 0}
+
+/* CARDS */
+.concept-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
+@media(max-width:640px){.concept-grid{grid-template-columns:1fr}}
+.concept-card{
+  background:var(--s1);border:1px solid var(--border);border-radius:14px;padding:22px;
+  transition:border-color .3s,transform .2s;
+}
+.concept-card:hover{border-color:rgba(99,102,241,0.3);transform:translateY(-2px)}
+.cc-label{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--muted);margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.cc-label::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--indigo);flex-shrink:0}
+.concept-card h3{font-size:15px;font-weight:700;margin-bottom:10px}
+.concept-card p{font-size:13px;color:var(--muted);line-height:1.7}
+.hl-green{color:var(--sheets);font-weight:600}
+.hl-blue{color:var(--drive);font-weight:600}
+.hl-red{color:var(--gmail);font-weight:600}
+.hl-cyan{color:var(--cyan);font-weight:600}
+
+/* CODE */
+.code-block{background:#020810;border:1px solid rgba(255,255,255,0.07);border-radius:12px;overflow:hidden;margin:14px 0}
+.code-head{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:rgba(255,255,255,0.03);border-bottom:1px solid rgba(255,255,255,0.06)}
+.code-title{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);letter-spacing:1px}
+.copy-btn{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:1px;background:transparent;color:var(--muted);border:1px solid var(--border);padding:4px 12px;border-radius:6px;cursor:pointer;transition:all .2s}
+.copy-btn:hover{color:var(--cyan);border-color:rgba(34,211,238,0.3)}
+.copy-btn.copied{color:var(--green);border-color:rgba(16,185,129,0.3)}
+.code-body{padding:18px 20px;overflow-x:auto}
+.code-body pre{font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.9;white-space:pre;color:#e2e8f0}
+.k{color:#ff79c6}.s{color:#a5f3a5}.n{color:#79c0ff}.p{color:#ffa657}
+.c{color:#6272a4;font-style:italic}.v{color:#f8f8f2}.b{color:#bd93f9}.t{color:#ffb86c}
+
+/* EXPLAIN */
+.explain{display:flex;gap:12px;padding:14px 18px;border-radius:10px;margin:10px 0;font-size:13px;line-height:1.7}
+.exp-info{background:rgba(99,102,241,0.07);border:1px solid rgba(99,102,241,0.2)}
+.exp-tip{background:rgba(245,158,11,0.07);border:1px solid rgba(245,158,11,0.2)}
+.exp-warn{background:rgba(248,113,113,0.07);border:1px solid rgba(248,113,113,0.2)}
+.exp-ok{background:rgba(16,185,129,0.07);border:1px solid rgba(16,185,129,0.2)}
+.exp-sheets{background:rgba(52,168,83,0.07);border:1px solid rgba(52,168,83,0.2)}
+.exp-icon{font-size:16px;flex-shrink:0;margin-top:1px}
+
+/* OPERATION TABLE */
+.op-table{width:100%;border-collapse:collapse;margin:14px 0;border-radius:10px;overflow:hidden}
+.op-table th{background:var(--s2);padding:10px 16px;text-align:left;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:1px;color:var(--muted);border-bottom:1px solid var(--border)}
+.op-table td{padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.04);font-size:13px;background:var(--s1)}
+.op-table tr:last-child td{border-bottom:none}
+.op-table td code{font-family:'JetBrains Mono',monospace;font-size:12px;background:rgba(99,102,241,0.12);color:var(--indigo);padding:2px 8px;border-radius:4px}
+.badge{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:10px;padding:2px 8px;border-radius:4px;letter-spacing:0.5px}
+.bd-green{background:rgba(52,168,83,0.15);color:var(--sheets);border:1px solid rgba(52,168,83,0.3)}
+.bd-orange{background:rgba(245,158,11,0.15);color:var(--orange);border:1px solid rgba(245,158,11,0.3)}
+.bd-blue{background:rgba(66,133,244,0.12);color:var(--drive);border:1px solid rgba(66,133,244,0.2)}
+
+/* TABS */
+.tabs{display:flex;gap:4px;background:var(--s2);padding:4px;border-radius:10px;margin-bottom:16px;flex-wrap:wrap}
+.tab-btn{flex:1;padding:8px 12px;background:transparent;border:none;border-radius:7px;color:var(--muted);font-size:12px;font-weight:600;cursor:pointer;transition:all .2s;font-family:'JetBrains Mono',monospace;letter-spacing:1px;min-width:100px}
+.tab-btn.on{background:var(--indigo);color:#fff}
+.tab-pane{display:none}.tab-pane.on{display:block}
+
+/* EXAMPLE SECTION */
+.example-section{
+  background:linear-gradient(135deg,rgba(52,168,83,0.06),rgba(66,133,244,0.04));
+  border:1px solid rgba(52,168,83,0.2);border-radius:18px;padding:28px;margin-top:20px;
+}
+.example-title{font-family:'Sora',sans-serif;font-size:17px;font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:10px}
+.example-desc{font-size:13px;color:var(--muted);margin-bottom:20px;line-height:1.7}
+
+/* PLAYGROUND */
+.playground{background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:16px}
+.pg-title{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:2px;color:var(--cyan);margin-bottom:16px}
+.field-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.field-label{font-size:13px;color:var(--muted);min-width:90px}
+.field-input{background:var(--s2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:13px;padding:8px 12px;outline:none;transition:border-color .2s}
+.field-input:focus{border-color:var(--indigo)}
+.field-select{background:var(--s2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;padding:8px 12px;outline:none;cursor:pointer}
+.run-btn{font-size:13px;font-weight:700;font-family:'Noto Sans KR',sans-serif;background:linear-gradient(135deg,var(--indigo),#4f46e5);color:#fff;border:none;border-radius:8px;padding:10px 22px;cursor:pointer;transition:all .2s;box-shadow:0 0 16px rgba(99,102,241,0.3)}
+.run-btn:hover{transform:translateY(-1px);box-shadow:0 0 24px rgba(99,102,241,0.5)}
+.result-box{margin-top:14px;border-radius:10px;padding:16px 20px;display:none;animation:slideIn .3s ease}
+.result-box.show{display:block}
+@keyframes slideIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+.rb-ok{background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.25)}
+.rb-warn{background:rgba(245,158,11,0.07);border:1px solid rgba(245,158,11,0.2)}
+.rb-neutral{background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.2)}
+
+/* SPREADSHEET PREVIEW */
+.sheet-preview{background:#0f1923;border:1px solid #1e3a2f;border-radius:12px;overflow:hidden;margin:14px 0}
+.sheet-header{background:#0d2218;padding:10px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid #1e3a2f;font-size:13px;font-weight:600;color:var(--sheets)}
+.sheet-table{width:100%;border-collapse:collapse}
+.sheet-table th{background:#0a1c12;padding:8px 14px;text-align:left;font-family:'JetBrains Mono',monospace;font-size:11px;color:#6bbf8a;border-right:1px solid #1a2e20;border-bottom:1px solid #1a2e20;letter-spacing:1px}
+.sheet-table td{padding:9px 14px;border-right:1px solid #0f2219;border-bottom:1px solid #0f2219;font-size:13px;color:#cce8d4}
+.sheet-table td.row-num{color:#6bbf8a;font-family:'JetBrains Mono',monospace;font-size:11px;background:#0a1c12;text-align:center;width:36px}
+.sheet-table tr.new-row td{background:rgba(52,168,83,0.08);color:#86efac}
+
+/* EMAIL PREVIEW */
+.email-preview{background:#1a1215;border:1px solid rgba(234,67,53,0.2);border-radius:12px;overflow:hidden;margin:14px 0}
+.email-header{background:#1f1418;padding:14px 20px;border-bottom:1px solid rgba(234,67,53,0.15)}
+.email-field{display:flex;gap:10px;padding:5px 0;font-size:13px}
+.email-key{color:rgba(234,67,53,0.7);min-width:50px;font-weight:600}
+.email-val{color:#ddd}
+.email-body{padding:20px;font-size:13px;line-height:1.8;color:#ddd}
+.email-body table{width:100%;border-collapse:collapse;margin:12px 0}
+.email-body table th{background:#2a1820;padding:8px 12px;text-align:left;font-size:12px;color:#f87171}
+.email-body table td{padding:8px 12px;border-bottom:1px solid rgba(234,67,53,0.1);font-size:12px}
+
+/* WORKFLOW FLOW */
+.wf-flow{display:flex;flex-direction:column;gap:0;margin:20px 0}
+.wf-step{display:flex;gap:16px;align-items:flex-start;padding:16px 0;border-bottom:1px solid var(--border)}
+.wf-step:last-child{border-bottom:none}
+.wf-num{width:36px;height:36px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;font-family:'JetBrains Mono',monospace}
+.wn-sheets{background:rgba(52,168,83,0.15);color:var(--sheets);border:1px solid rgba(52,168,83,0.3)}
+.wn-gmail{background:rgba(234,67,53,0.1);color:var(--gmail);border:1px solid rgba(234,67,53,0.25)}
+.wn-drive{background:rgba(66,133,244,0.1);color:var(--drive);border:1px solid rgba(66,133,244,0.25)}
+.wn-trigger{background:rgba(245,158,11,0.12);color:var(--orange);border:1px solid rgba(245,158,11,0.3)}
+.wn-code{background:rgba(99,102,241,0.12);color:var(--indigo);border:1px solid rgba(99,102,241,0.3)}
+.wf-content h4{font-size:15px;font-weight:600;margin-bottom:6px}
+.wf-content p{font-size:13px;color:var(--muted);line-height:1.6}
+.wf-content code{font-family:'JetBrains Mono',monospace;font-size:12px;background:rgba(99,102,241,0.12);color:var(--indigo);padding:2px 8px;border-radius:4px}
+
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--dim);border-radius:3px}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-item active" onclick="goTo('sheets-read')">📖 Sheets 읽기</div>
+  <div class="nav-item" onclick="goTo('sheets-write')">✏️ Sheets 쓰기</div>
+  <div class="nav-item" onclick="goTo('project')">🚀 실전 프로젝트</div>
+  <div class="nav-item" onclick="goTo('gmail')">📧 Gmail</div>
+  <div class="nav-item" onclick="goTo('drive')">💾 Google Drive</div>
+  <div class="nav-item" onclick="goTo('examples')">🧪 실습 예제</div>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="google-badges">
+    <span class="gbadge gb-sheets">📊 SHEETS</span>
+    <span class="gbadge gb-gmail">✉️ GMAIL</span>
+    <span class="gbadge gb-drive">💾 DRIVE</span>
+  </div>
+  <h1>N8N × Google<br>자동화 완전 정복</h1>
+  <p>Google Sheets 읽기·쓰기, Gmail 자동 발송,<br>Google Drive 관리까지 — 실전 프로젝트로 한번에 배웁니다</p>
+</div>
+
+<div class="wrap">
+
+<!-- ═══════════════════════════════════════ -->
+<!-- SECTION 1: Google Sheets 읽기          -->
+<!-- ═══════════════════════════════════════ -->
+<div class="section" id="sheets-read">
+  <div class="section-head">
+    <div class="section-icon si-sheets">📖</div>
+    <div>
+      <h2>Google Sheets 읽기 작업</h2>
+      <div class="section-sub">시트에서 데이터를 가져와 N8N으로 처리합니다</div>
+    </div>
+  </div>
+
+  <!-- 준비: Credential 설정 -->
+  <div class="explain exp-info">
+    <span class="exp-icon">🔑</span>
+    <span><strong>먼저 Google 연동 설정:</strong> N8N → Credentials → "+ Add" → <strong>Google Sheets OAuth2 API</strong> 선택 → Google 계정 로그인 → 권한 허용. 한 번만 설정하면 Sheets·Gmail·Drive 모두 같은 Credential로 사용 가능합니다.</span>
+  </div>
+
+  <!-- Spreadsheet ID -->
+  <div class="concept-grid">
+    <div class="concept-card">
+      <div class="cc-label">Spreadsheet ID 찾기</div>
+      <h3>URL에서 ID 복사</h3>
+      <p>Google Sheets URL:<br>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted)">docs.google.com/spreadsheets/d/<span class="hl-green">1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms</span>/edit</span><br>
+      중간의 굵은 부분이 Spreadsheet ID입니다.</p>
+    </div>
+    <div class="concept-card">
+      <div class="cc-label">시트 이름 지정</div>
+      <h3>Sheet Name vs Sheet ID</h3>
+      <p>시트 이름은 탭 이름 그대로 입력 (예: <span class="hl-green">"시트1"</span>, <span class="hl-green">"환율데이터"</span>)<br>
+      첫 번째 탭 기본값은 "시트1" 또는 "Sheet1"입니다.</p>
+    </div>
+  </div>
+
+  <!-- 읽기 Operations -->
+  <table class="op-table">
+    <tr><th>Operation</th><th>설명</th><th>주요 설정값</th><th>결과</th></tr>
+    <tr>
+      <td><span class="badge bd-green">Get Rows</span></td>
+      <td>시트 전체 데이터 읽기</td>
+      <td>Spreadsheet ID, Sheet Name</td>
+      <td>각 행이 아이템으로 변환</td>
+    </tr>
+    <tr>
+      <td><span class="badge bd-green">Get Row</span></td>
+      <td>특정 범위(Range) 읽기</td>
+      <td>Range: <code>A1:D10</code></td>
+      <td>지정 범위만 가져옴</td>
+    </tr>
+    <tr>
+      <td><span class="badge bd-green">Get Rows</span> + Filter</td>
+      <td>조건으로 특정 행만 읽기</td>
+      <td>Filters: 열 = 값</td>
+      <td>조건에 맞는 행만</td>
+    </tr>
+  </table>
+
+  <!-- 시트 데이터 읽기 코드 -->
+  <div class="code-block">
+    <div class="code-head"><span class="code-title">Google Sheets 노드 — 읽기 설정</span><button class="copy-btn" onclick="copyCode(this)">COPY</button></div>
+    <div class="code-body"><pre><span class="c">// ─── 실습 10: 시트에서 데이터 전체 읽기 ───</span>
+Resource:       Database
+Operation:      Get Many Rows
+Document ID:    <span class="s">1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms</span>
+Sheet Name:     <span class="s">시트1</span>
+Return All:     ON
+
+<span class="c">// → 각 행이 아이템으로 변환되어 출력됨</span>
+<span class="c">// 아이템 예시: { 이름: "홍길동", 나이: 30, 부서: "영업" }</span>
+
+<span class="c">// ─── 특정 범위(Range) 읽기 ───</span>
+Operation:      Get Range
+Range:          <span class="s">A2:D100</span>   <span class="c">// A2부터 D100까지</span>
+<span class="c">// 1행(헤더)을 제외하고 데이터만 읽을 때 유용</span>
+
+<span class="c">// ─── 필터 조건으로 특정 행만 읽기 ───</span>
+Filters:
+  Column: <span class="s">부서</span>
+  Condition: Equals
+  Value: <span class="s">영업</span>
+<span class="c">// "부서" 컬럼이 "영업"인 행만 가져옴</span></pre>
+    </div>
+  </div>
+
+  <!-- 시트 미리보기 -->
+  <div class="sheet-preview">
+    <div class="sheet-header">📊 example_employees.xlsx → N8N이 이렇게 읽습니다</div>
+    <table class="sheet-table">
+      <tr>
+        <th width="36">　</th><th>이름</th><th>부서</th><th>점수</th><th>입사일</th>
+      </tr>
+      <tr>
+        <td class="row-num">1</td><td style="color:#6bbf8a;font-weight:600">이름</td>
+        <td style="color:#6bbf8a;font-weight:600">부서</td>
+        <td style="color:#6bbf8a;font-weight:600">점수</td>
+        <td style="color:#6bbf8a;font-weight:600">입사일</td>
+      </tr>
+      <tr><td class="row-num">2</td><td>홍길동</td><td>영업</td><td>85</td><td>2023-01-15</td></tr>
+      <tr><td class="row-num">3</td><td>김영희</td><td>개발</td><td>92</td><td>2022-06-01</td></tr>
+      <tr><td class="row-num">4</td><td>이철수</td><td>영업</td><td>78</td><td>2023-08-20</td></tr>
+    </table>
+  </div>
+
+  <div class="explain exp-tip">
+    <span class="exp-icon">💡</span>
+    <span><strong>헤더 자동 매핑:</strong> Google Sheets 노드는 1행을 자동으로 컬럼명으로 인식합니다. 그래서 데이터가 <code style="font-family:monospace;color:var(--cyan)">{{ $json.이름 }}</code>, <code style="font-family:monospace;color:var(--cyan)">{{ $json.부서 }}</code>처럼 한국어 컬럼명으로 바로 접근됩니다!</span>
+  </div>
+
+  <!-- 통계 계산 -->
+  <div class="code-block">
+    <div class="code-head"><span class="code-title">시트 읽기 → Code 노드로 통계 계산</span><button class="copy-btn" onclick="copyCode(this)">COPY</button></div>
+    <div class="code-body"><pre><span class="c">// 시트에서 읽은 데이터로 통계 계산</span>
+<span class="k">const</span> scores = items.map(i => i.json.점수);
+
+<span class="k">const</span> avg = scores.reduce((a, b) => a + b, <span class="n">0</span>) / scores.length;
+<span class="k">const</span> max = Math.max(...scores);
+<span class="k">const</span> min = Math.min(...scores);
+<span class="k">const</span> passing = scores.filter(s => s >= <span class="n">80</span>).length;
+
+<span class="k">return</span> [{
+  json: {
+    총인원: items.length,
+    평균점수: Math.round(avg),
+    최고점: max,
+    최저점: min,
+    합격자수: passing,
+    합격률: Math.round(passing / items.length * <span class="n">100</span>) + <span class="s">"%"</span>
+  }
+}];</pre>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ═══════════════════════════════════════ -->
+<!-- SECTION 2: Google Sheets 쓰기          -->
+<!-- ═══════════════════════════════════════ -->
+<div class="section" id="sheets-write">
+  <div class="section-head">
+    <div class="section-icon si-sheets">✏️</div>
+    <div>
+      <h2>Google Sheets 쓰기 작업</h2>
+      <div class="section-sub">데이터를 시트에 추가·수정·삭제하는 모든 작업</div>
+    </div>
+  </div>
+
+  <table class="op-table">
+    <tr><th>Operation</th><th>설명</th><th>언제 쓰나요?</th><th>주요 설정</th></tr>
+    <tr>
+      <td><span class="badge bd-green">Append Row</span></td>
+      <td>새 행 맨 아래에 추가</td>
+      <td>데이터 축적, 로그 기록</td>
+      <td>컬럼명과 값 매핑</td>
+    </tr>
+    <tr>
+      <td><span class="badge bd-orange">Update Row</span></td>
+      <td>기존 행 값 수정</td>
+      <td>상태 변경, 결과 업데이트</td>
+      <td>Filter로 행 찾기 + 새값</td>
+    </tr>
+    <tr>
+      <td><span class="badge bd-green">Create</span></td>
+      <td>새 스프레드시트 생성</td>
+      <td>월별 시트 자동 생성</td>
+      <td>제목, 시트명 설정</td>
+    </tr>
+    <tr>
+      <td><span class="badge bd-orange">Delete Row</span></td>
+      <td>특정 행 삭제</td>
+      <td>오래된 데이터 정리</td>
+      <td>Row Number 지정</td>
+    </tr>
+    <tr>
+      <td><span class="badge bd-orange">Clear</span></td>
+      <td>범위 데이터 지우기</td>
+      <td>시트 초기화</td>
+      <td>Range: A2:Z1000</td>
+    </tr>
+  </table>
+
+  <div class="code-block">
+    <div class="code-head"><span class="code-title">Append Row — 새 행 추가하기</span><button class="copy-btn" onclick="copyCode(this)">COPY</button></div>
+    <div class="code-body"><pre><span class="c">// ─── Google Sheets 노드: Append Row ───</span>
+Resource:       Database
+Operation:      Append Row
+Document ID:    <span class="s">스프레드시트_ID</span>
+Sheet Name:     <span class="s">시트1</span>
+
+<span class="c">// Values to Send (컬럼명 = 값 매핑)</span>
+날짜:      <span class="b">{{ $now.format('yyyy-MM-dd') }}</span>
+이름:      <span class="b">{{ $json.이름 }}</span>
+점수:      <span class="b">{{ $json.점수 }}</span>
+등급:      <span class="b">{{ $json.등급 }}</span>
+처리시간:  <span class="b">{{ $now.toISOString() }}</span>
+
+<span class="c">// → 시트 맨 아래에 한 행이 자동 추가됨</span></pre>
+    </div>
+  </div>
+
+  <div class="code-block">
+    <div class="code-head"><span class="code-title">Update Row — 기존 행 수정하기</span><button class="copy-btn" onclick="copyCode(this)">COPY</button></div>
+    <div class="code-body"><pre><span class="c">// ─── Update Row: 주문 상태 업데이트 예시 ───</span>
+Operation:  Update Row
+
+<span class="c">// 어느 행을 수정할지 필터 조건</span>
+Filters:
+  Column: <span class="s">주문번호</span>
+  Value:  <span class="b">{{ $json.주문번호 }}</span>
+
+<span class="c">// 수정할 값</span>
+처리상태: <span class="s">"완료"</span>
+완료일시: <span class="b">{{ $now.format('yyyy-MM-dd HH:mm') }}</span>
+담당자:   <span class="b">{{ $json.담당자 }}</span>
+
+<span class="c">// ─── 실습 11: 폼 데이터 → 시트 자동 기록 ───</span>
+<span class="c">// Webhook 노드(폼 수신) → Sheets Append Row</span>
+이름:     <span class="b">{{ $json.body.이름 }}</span>
+이메일:   <span class="b">{{ $json.body.이메일 }}</span>
+신청내용: <span class="b">{{ $json.body.내용 }}</span>
+접수시간: <span class="b">{{ $now.format('MM/dd HH:mm') }}</span></pre>
+    </div>
+  </div>
+
+  <div class="explain exp-warn">
+    <span class="exp-icon">⚠️</span>
+    <span><strong>헤더 컬럼명 주의:</strong> Google Sheets 노드에서 "Values to Send"의 Key 이름이 시트 1행의 컬럼명과 <strong>정확히 일치</strong>해야 합니다. 대소문자, 공백, 특수문자 하나라도 다르면 빈 값이 기록됩니다.</span>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ═══════════════════════════════════════ -->
+<!-- SECTION 3: 실전 프로젝트               -->
+<!-- ═══════════════════════════════════════ -->
+<div class="section" id="project">
+  <div class="section-head">
+    <div class="section-icon si-project">🚀</div>
+    <div>
+      <h2>실전: 일일 데이터 자동 수집 시트 만들기</h2>
+      <div class="section-sub">매일 오전 9시, 날씨 + 환율 + 통계를 구글 시트에 자동 기록</div>
+    </div>
+  </div>
+
+  <!-- 워크플로우 흐름 -->
+  <div style="background:var(--s1);border:1px solid var(--border);border-radius:16px;padding:28px;margin-bottom:20px">
+    <div style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:2px;color:var(--muted);margin-bottom:20px">WORKFLOW STRUCTURE</div>
+    <div class="wf-flow">
+      <div class="wf-step">
+        <div class="wf-num wn-trigger">⏰</div>
+        <div class="wf-content">
+          <h4>Schedule Trigger — 매일 09:00 KST</h4>
+          <p>한국 시간 기준 매일 오전 9시에 자동 실행. Timezone: <code>Asia/Seoul</code></p>
+        </div>
+      </div>
+      <div class="wf-step">
+        <div class="wf-num" style="background:rgba(34,211,238,0.1);color:var(--cyan);border:1px solid rgba(34,211,238,0.25)">🌤</div>
+        <div class="wf-content">
+          <h4>HTTP Request — 날씨 API 호출</h4>
+          <p>OpenWeatherMap API: <code>GET /data/2.5/weather?q=Seoul&units=metric</code></p>
+        </div>
+      </div>
+      <div class="wf-step">
+        <div class="wf-num" style="background:rgba(34,211,238,0.1);color:var(--cyan);border:1px solid rgba(34,211,238,0.25)">💱</div>
+        <div class="wf-content">
+          <h4>HTTP Request — 환율 API 호출</h4>
+          <p>Open Exchange Rates API: <code>GET /v6/latest/USD</code> (API 키 불필요)</p>
+        </div>
+      </div>
+      <div class="wf-step">
+        <div class="wf-num wn-code">⚙️</div>
+        <div class="wf-content">
+          <h4>Code 노드 — 데이터 통합 & 계산</h4>
+          <p>날씨·환율 데이터를 합치고, KRW/EUR/JPY 교차환율 계산, 시트 기록용 포맷으로 변환</p>
+        </div>
+      </div>
+      <div class="wf-step">
+        <div class="wf-num wn-sheets">📊</div>
+        <div class="wf-content">
+          <h4>Google Sheets — Append Row</h4>
+          <p>날짜 + 날씨 + 환율을 한 행으로 시트에 자동 추가. 매일 쌓여서 데이터 히스토리 완성</p>
+        </div>
+      </div>
+      <div class="wf-step">
+        <div class="wf-num wn-sheets">📈</div>
+        <div class="wf-content">
+          <h4>Google Sheets — Get Rows (통계 계산용)</h4>
+          <p>시트 전체 데이터를 읽어 최근 7일 평균 환율, 최고/최저 온도 등 통계 계산</p>
+        </div>
+      </div>
+      <div class="wf-step">
+        <div class="wf-num wn-gmail">📧</div>
+        <div class="wf-content">
+          <h4>Gmail — 일일 보고서 이메일 발송</h4>
+          <p>오늘의 날씨·환율 + 주간 통계를 HTML 이메일로 자동 발송</p>
+        </div>
+      </div>
+      <div class="wf-step">
+        <div class="wf-num" style="background:rgba(248,113,113,0.1);color:var(--red);border:1px solid rgba(248,113,113,0.2)">🚨</div>
+        <div class="wf-content">
+          <h4>Error Trigger — 오류 발생 시 처리</h4>
+          <p>어느 노드에서든 실패하면 Error Trigger가 감지 → Telegram 또는 Gmail로 오류 알림</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 전체 코드 -->
+  <div class="code-block">
+    <div class="code-head"><span class="code-title">Code 노드 — 날씨 + 환율 데이터 통합</span><button class="copy-btn" onclick="copyCode(this)">COPY</button></div>
+    <div class="code-body"><pre><span class="c">// ─── 날씨 노드 데이터 참조 ───</span>
+<span class="k">const</span> weather = $(<span class="s">"날씨 API 호출"</span>).item.json;
+
+<span class="c">// ─── 환율 노드 데이터 참조 ───</span>
+<span class="k">const</span> rates = $(<span class="s">"환율 API 호출"</span>).item.json.rates;
+
+<span class="c">// 한국 시간</span>
+<span class="k">const</span> now = <span class="k">new</span> Date();
+<span class="k">const</span> kst = <span class="k">new</span> Date(now.getTime() + <span class="n">9</span> * <span class="n">3600000</span>);
+<span class="k">const</span> dateStr = kst.toISOString().split(<span class="s">'T'</span>)[<span class="n">0</span>];
+<span class="k">const</span> timeStr = kst.toISOString().slice(<span class="n">11</span>, <span class="n">16</span>);
+
+<span class="c">// 환율 계산</span>
+<span class="k">const</span> USD_KRW = Math.round(rates.KRW);
+<span class="k">const</span> EUR_KRW = Math.round(rates.KRW / rates.EUR);
+<span class="k">const</span> JPY_KRW = Math.round(rates.KRW / rates.JPY * <span class="n">100</span>);
+
+<span class="k">return</span> [{
+  json: {
+    날짜:        dateStr,
+    수집시간:    timeStr,
+    도시:        weather.name,
+    기온:        Math.round(weather.main.temp * <span class="n">10</span>) / <span class="n">10</span>,
+    체감기온:    Math.round(weather.main.feels_like),
+    날씨:        weather.weather[<span class="n">0</span>].description,
+    습도:        weather.main.humidity,
+    USD_KRW:     USD_KRW,
+    EUR_KRW:     EUR_KRW,
+    JPY_KRW:     JPY_KRW
+  }
+}];</pre>
+    </div>
+  </div>
+
+  <!-- 시트 결과 미리보기 -->
+  <div class="sheet-preview">
+    <div class="sheet-header">📊 일일_자동수집.xlsx — 쌓이는 결과 미리보기</div>
+    <table class="sheet-table">
+      <tr>
+        <th>　</th><th>날짜</th><th>기온</th><th>날씨</th><th>습도</th><th>USD_KRW</th><th>EUR_KRW</th><th>JPY_KRW</th>
+      </tr>
+      <tr><td class="row-num">2</td><td>2025-01-13</td><td>3.2°C</td><td>맑음</td><td>45%</td><td>1,461</td><td>1,580</td><td>928</td></tr>
+      <tr><td class="row-num">3</td><td>2025-01-14</td><td>5.1°C</td><td>구름많음</td><td>62%</td><td>1,448</td><td>1,569</td><td>918</td></tr>
+      <tr class="new-row"><td class="row-num">4</td><td>2025-01-15</td><td>8.4°C</td><td>흐림</td><td>71%</td><td>1,452</td><td>1,573</td><td>921</td></tr>
+    </table>
+  </div>
+
+  <!-- Error Trigger -->
+  <div class="code-block">
+    <div class="code-head"><span class="code-title">Error Trigger — 오류 발생 시 Gmail 알림</span><button class="copy-btn" onclick="copyCode(this)">COPY</button></div>
+    <div class="code-body"><pre><span class="c">// ─── Error Trigger 노드 ───</span>
+<span class="c">// 어떤 노드에서든 실패 시 자동 실행됨</span>
+
+<span class="c">// ─── Gmail 노드 (에러 알림) ───</span>
+To:      <span class="s">admin@company.com</span>
+Subject: <span class="b">{{ "🚨 N8N 오류: " + $json.workflow.name }}</span>
+Body:
+<span class="s">워크플로우 오류가 발생했습니다.</span>
+
+<span class="s">📋 워크플로우: </span><span class="b">{{ $json.workflow.name }}</span>
+<span class="s">❌ 오류 내용: </span><span class="b">{{ $json.execution.error.message }}</span>
+<span class="s">📍 오류 노드: </span><span class="b">{{ $json.execution.lastNodeExecuted }}</span>
+<span class="s">⏰ 발생 시간: </span><span class="b">{{ $json.execution.startedAt }}</span>
+
+<span class="c">// 오류 확인 후 → N8N 대시보드 → Executions 탭에서 재실행 가능</span></pre>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ═══════════════════════════════════════ -->
+<!-- SECTION 4: Gmail 자동화               -->
+<!-- ═══════════════════════════════════════ -->
+<div class="section" id="gmail">
+  <div class="section-head">
+    <div class="section-icon si-gmail">📧</div>
+    <div>
+      <h2>Gmail 자동화</h2>
+      <div class="section-sub">이메일 자동 발송, HTML 템플릿, 데이터 기반 보고서 이메일</div>
+    </div>
+  </div>
+
+  <div class="concept-grid">
+    <div class="concept-card">
+      <div class="cc-label">Gmail 노드</div>
+      <h3>이메일 자동 발송</h3>
+      <p>Google 계정으로 이메일을 보냅니다. 텍스트뿐 아니라 <span class="hl-red">HTML 형식</span>으로 표, 색상, 링크가 들어간 이메일도 전송 가능합니다.</p>
+    </div>
+    <div class="concept-card">
+      <div class="cc-label">HTML 이메일</div>
+      <h3>보고서급 이메일 만들기</h3>
+      <p>Code 노드에서 HTML 문자열을 생성 후, Gmail 노드의 <span class="hl-red">Message Type: HTML</span>로 설정하면 예쁜 보고서 이메일이 됩니다.</p>
+    </div>
+  </div>
+
+  <div class="code-block">
+    <div class="code-head"><span class="code-title">Gmail 노드 기본 설정</span><button class="copy-btn" onclick="copyCode(this)">COPY</button></div>
+    <div class="code-body"><pre><span class="c">// ─── Gmail 노드 설정 ───</span>
+Resource:      Message
+Operation:     Send
+
+To:            <span class="b">{{ $json.이메일 }}</span>      <span class="c">// 또는 고정: "user@example.com"</span>
+Subject:       <span class="b">{{ "[" + $now.format('MM/dd') + "] 일일 보고서" }}</span>
+Message Type:  HTML                 <span class="c">// HTML 형식 선택!</span>
+Message:       <span class="b">{{ $json.html_body }}</span>  <span class="c">// Code 노드에서 생성한 HTML</span>
+
+<span class="c">// 첨부파일 추가 (선택)</span>
+Attachments:   Binary Data
+Field Name:    <span class="s">data</span></pre>
+    </div>
+  </div>
+
+  <!-- 실습 12: HTML 이메일 템플릿 -->
+  <div class="example-section">
+    <div class="example-title">📧 실습 12 — HTML 이메일 템플릿 만들기</div>
+    <div class="example-desc">
+      Code 노드에서 HTML 문자열을 만들어 Gmail로 전송하면 표, 색상, 링크가 있는 전문 보고서 이메일이 됩니다.
+    </div>
+
+    <div class="code-block">
+      <div class="code-head"><span class="code-title">Code 노드 — HTML 이메일 생성</span><button class="copy-btn" onclick="copyCode(this)">COPY</button></div>
+      <div class="code-body"><pre><span class="k">const</span> usd = items[<span class="n">0</span>].json.USD_KRW;
+<span class="k">const</span> eur = items[<span class="n">0</span>].json.EUR_KRW;
+<span class="k">const</span> temp = items[<span class="n">0</span>].json.기온;
+<span class="k">const</span> weather = items[<span class="n">0</span>].json.날씨;
+<span class="k">const</span> date = items[<span class="n">0</span>].json.날짜;
+
+<span class="k">const</span> htmlBody = <span class="s">`
+&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;head&gt;&lt;meta charset="UTF-8"&gt;&lt;/head&gt;
+&lt;body style="font-family:sans-serif;background:#f5f5f5;padding:20px"&gt;
+  &lt;div style="max-width:600px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.1)"&gt;
+    
+    &lt;!-- 헤더 --&gt;
+    &lt;div style="background:#1a73e8;padding:24px;text-align:center"&gt;
+      &lt;h1 style="color:#fff;margin:0;font-size:22px"&gt;📊 일일 자동 보고서&lt;/h1&gt;
+      &lt;p style="color:rgba(255,255,255,0.8);margin:6px 0 0"&gt;${date}&lt;/p&gt;
+    &lt;/div&gt;
+    
+    &lt;!-- 내용 --&gt;
+    &lt;div style="padding:24px"&gt;
+      &lt;h3 style="color:#333;border-bottom:2px solid #e8f0fe;padding-bottom:8px"&gt;🌤 오늘의 날씨 (서울)&lt;/h3&gt;
+      &lt;table width="100%" style="border-collapse:collapse"&gt;
+        &lt;tr style="background:#f8f9fa"&gt;
+          &lt;td style="padding:10px;border:1px solid #e0e0e0"&gt;현재 기온&lt;/td&gt;
+          &lt;td style="padding:10px;border:1px solid #e0e0e0;font-weight:bold;color:#1a73e8"&gt;${temp}°C&lt;/td&gt;
+        &lt;/tr&gt;
+        &lt;tr&gt;
+          &lt;td style="padding:10px;border:1px solid #e0e0e0"&gt;날씨 상태&lt;/td&gt;
+          &lt;td style="padding:10px;border:1px solid #e0e0e0"&gt;${weather}&lt;/td&gt;
+        &lt;/tr&gt;
+      &lt;/table&gt;
+
+      &lt;h3 style="color:#333;border-bottom:2px solid #e8f0fe;padding-bottom:8px;margin-top:20px"&gt;💱 오늘의 환율&lt;/h3&gt;
+      &lt;table width="100%" style="border-collapse:collapse"&gt;
+        &lt;tr style="background:#1a73e8;color:#fff"&gt;
+          &lt;th style="padding:10px;border:1px solid #1557b0"&gt;통화&lt;/th&gt;
+          &lt;th style="padding:10px;border:1px solid #1557b0"&gt;환율 (원)&lt;/th&gt;
+        &lt;/tr&gt;
+        &lt;tr&gt;
+          &lt;td style="padding:10px;border:1px solid #e0e0e0"&gt;🇺🇸 USD&lt;/td&gt;
+          &lt;td style="padding:10px;border:1px solid #e0e0e0;font-weight:bold"&gt;${usd.toLocaleString()}원&lt;/td&gt;
+        &lt;/tr&gt;
+        &lt;tr style="background:#f8f9fa"&gt;
+          &lt;td style="padding:10px;border:1px solid #e0e0e0"&gt;🇪🇺 EUR&lt;/td&gt;
+          &lt;td style="padding:10px;border:1px solid #e0e0e0;font-weight:bold"&gt;${eur.toLocaleString()}원&lt;/td&gt;
+        &lt;/tr&gt;
+      &lt;/table&gt;
+    &lt;/div&gt;
+
+    &lt;div style="background:#f8f9fa;padding:16px;text-align:center;font-size:12px;color:#999"&gt;
+      N8N 자동화 시스템에 의해 자동 발송됨
+    &lt;/div&gt;
+  &lt;/div&gt;
+&lt;/body&gt;
+&lt;/html&gt;`</span>;
+
+<span class="k">return</span> [{ json: { ...items[<span class="n">0</span>].json, html_body: htmlBody } }];</pre>
+      </div>
+    </div>
+
+    <!-- 이메일 미리보기 -->
+    <div style="margin-top:16px">
+      <div style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--muted);margin-bottom:10px">EMAIL PREVIEW</div>
+      <div class="email-preview">
+        <div class="email-header">
+          <div class="email-field"><span class="email-key">From:</span><span class="email-val">n8n-automation@gmail.com</span></div>
+          <div class="email-field"><span class="email-key">To:</span><span class="email-val">manager@company.com</span></div>
+          <div class="email-field"><span class="email-key">Sub:</span><span class="email-val">[01/15] 일일 자동 보고서</span></div>
+        </div>
+        <div class="email-body">
+          <div style="background:#1a73e8;padding:16px;text-align:center;border-radius:8px 8px 0 0;margin:-4px -4px 0">
+            <div style="color:#fff;font-size:18px;font-weight:700">📊 일일 자동 보고서</div>
+            <div style="color:rgba(255,255,255,0.7);font-size:12px">2025-01-15</div>
+          </div>
+          <div style="margin-top:16px">
+            <div style="font-weight:700;font-size:14px;border-bottom:2px solid #1a73e8;padding-bottom:6px;margin-bottom:10px">🌤 오늘의 날씨 (서울)</div>
+            <table style="width:100%">
+              <tr><th style="background:#1a73e8;color:#fff">항목</th><th style="background:#1a73e8;color:#fff">값</th></tr>
+              <tr><td>현재 기온</td><td style="color:#1a73e8;font-weight:700">8.4°C</td></tr>
+              <tr><td>날씨 상태</td><td>흐림</td></tr>
+            </table>
+            <div style="font-weight:700;font-size:14px;border-bottom:2px solid #1a73e8;padding-bottom:6px;margin:16px 0 10px">💱 오늘의 환율</div>
+            <table style="width:100%">
+              <tr><th>통화</th><th>환율</th></tr>
+              <tr><td>🇺🇸 USD</td><td style="font-weight:700">1,452원</td></tr>
+              <tr><td>🇪🇺 EUR</td><td style="font-weight:700">1,573원</td></tr>
+            </table>
+          </div>
+          <div style="text-align:center;font-size:11px;color:var(--muted);margin-top:14px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.08)">N8N 자동화 시스템에 의해 자동 발송됨</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ═══════════════════════════════════════ -->
+<!-- SECTION 5: Google Drive               -->
+<!-- ═══════════════════════════════════════ -->
+<div class="section" id="drive">
+  <div class="section-head">
+    <div class="section-icon si-drive">💾</div>
+    <div>
+      <h2>Google Drive 자동화</h2>
+      <div class="section-sub">파일 목록 조회, 파일 생성·업로드, 자동 보고서 저장</div>
+    </div>
+  </div>
+
+  <table class="op-table">
+    <tr><th>Operation</th><th>설명</th><th>활용 예</th></tr>
+    <tr>
+      <td><span class="badge bd-blue">Get Many Files</span></td>
+      <td>파일 목록 가져오기</td>
+      <td>특정 폴더의 파일 수 확인, 목록 시트에 기록</td>
+    </tr>
+    <tr>
+      <td><span class="badge bd-blue">Create from Text</span></td>
+      <td>텍스트로 파일 생성</td>
+      <td>보고서 텍스트 → .txt 파일로 Drive 저장</td>
+    </tr>
+    <tr>
+      <td><span class="badge bd-blue">Upload</span></td>
+      <td>파일 업로드</td>
+      <td>생성한 파일을 특정 폴더에 저장</td>
+    </tr>
+    <tr>
+      <td><span class="badge bd-blue">Move</span></td>
+      <td>파일 이동</td>
+      <td>처리 완료 파일 → 완료 폴더로 자동 이동</td>
+    </tr>
+  </table>
+
+  <div class="code-block">
+    <div class="code-head"><span class="code-title">Google Drive — 파일 목록 가져오기</span><button class="copy-btn" onclick="copyCode(this)">COPY</button></div>
+    <div class="code-body"><pre><span class="c">// ─── Google Drive 노드: Get Many Files ───</span>
+Resource:    File
+Operation:   Get Many
+
+<span class="c">// 특정 폴더 내 파일만 조회</span>
+Drive:       My Drive
+Folder ID:   <span class="s">폴더ID_URL에서_복사</span>
+              <span class="c">// drive.google.com/drive/folders/여기가폴더ID</span>
+
+Return All:  ON
+<span class="c">// → 파일명, 생성일, 크기, ID 등이 아이템으로 출력</span>
+
+<span class="c">// 접근 가능한 데이터</span>
+<span class="b">{{ $json.name }}</span>        <span class="c">// 파일명</span>
+<span class="b">{{ $json.id }}</span>          <span class="c">// 파일 ID</span>
+<span class="b">{{ $json.createdTime }}</span> <span class="c">// 생성 시간</span>
+<span class="b">{{ $json.mimeType }}</span>    <span class="c">// 파일 형식</span>
+<span class="b">{{ $json.size }}</span>        <span class="c">// 파일 크기 (bytes)</span></pre>
+    </div>
+  </div>
+
+  <!-- 실습 13: 자동 보고서 Drive 저장 -->
+  <div class="example-section">
+    <div class="example-title">💾 실습 13 — 자동 보고서 Drive 저장하기</div>
+    <div class="example-desc">
+      매일의 보고서를 텍스트 파일로 만들어 Google Drive 특정 폴더에 날짜명으로 자동 저장합니다.
+    </div>
+
+    <div class="code-block">
+      <div class="code-head"><span class="code-title">Code 노드 → Drive 저장 전체 흐름</span><button class="copy-btn" onclick="copyCode(this)">COPY</button></div>
+      <div class="code-body"><pre><span class="c">// ─── Step 1: Code 노드 — 보고서 텍스트 생성 ───</span>
+<span class="k">const</span> d = items[<span class="n">0</span>].json;
+<span class="k">const</span> reportText = <span class="s">`=== 일일 자동 보고서 ===
+날짜: ${d.날짜}
+생성: ${d.수집시간} KST
+
+[ 날씨 ]
+기온: ${d.기온}°C  체감: ${d.체감기온}°C
+상태: ${d.날씨}  습도: ${d.습도}%
+
+[ 환율 ]
+USD/KRW: ${d.USD_KRW.toLocaleString()}원
+EUR/KRW: ${d.EUR_KRW.toLocaleString()}원
+JPY/KRW: ${d.JPY_KRW.toLocaleString()}원 (100엔)
+========================`</span>;
+
+<span class="k">return</span> [{ json: { ...d, reportText, fileName: <span class="s">`보고서_${d.날짜}.txt`</span> } }];
+
+<span class="c">// ─── Step 2: Google Drive 노드 — Create from Text ───</span>
+Resource:    File
+Operation:   Create from Text
+Name:        <span class="b">{{ $json.fileName }}</span>      <span class="c">// 예: 보고서_2025-01-15.txt</span>
+Content:     <span class="b">{{ $json.reportText }}</span>
+Parent ID:   <span class="s">저장할_폴더_ID</span>
+              <span class="c">// Drive URL의 /folders/ 뒤 부분</span>
+
+<span class="c">// → 매일 날짜명 파일이 Drive 폴더에 자동 생성됨!</span></pre>
+      </div>
+    </div>
+
+    <div class="explain exp-ok">
+      <span class="exp-icon">✅</span>
+      <span><strong>폴더 ID 찾기:</strong> Google Drive에서 원하는 폴더 열기 → 주소창 URL 끝 부분 복사.<br>
+      <code style="font-family:monospace;color:var(--cyan)">drive.google.com/drive/folders/<strong>1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs</strong></code><br>
+      굵은 부분이 폴더 ID입니다.</span>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ═══════════════════════════════════════ -->
+<!-- SECTION 6: 인터랙티브 실습              -->
+<!-- ═══════════════════════════════════════ -->
+<div class="section" id="examples">
+  <div class="section-head">
+    <div class="section-icon si-purple">🧪</div>
+    <div>
+      <h2>직접 해보는 실습 시뮬레이터</h2>
+      <div class="section-sub">값을 입력해서 N8N 노드가 어떻게 동작하는지 확인하세요</div>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn on" onclick="showTab(this,'sim1')">📊 시트 기록</button>
+    <button class="tab-btn" onclick="showTab(this,'sim2')">📧 이메일 생성</button>
+    <button class="tab-btn" onclick="showTab(this,'sim3')">📁 파일명 생성</button>
+    <button class="tab-btn" onclick="showTab(this,'sim4')">🔢 통계 계산</button>
+  </div>
+
+  <!-- 실습 1: 시트 기록 시뮬레이션 -->
+  <div class="tab-pane on" id="sim1">
+    <div class="example-section">
+      <div class="example-title">📊 Google Sheets Append Row 시뮬레이터</div>
+      <div class="example-desc">
+        데이터를 입력하면 시트에 어떻게 한 행으로 추가되는지 미리 확인합니다.
+      </div>
+      <div class="playground">
+        <div class="pg-title">▶ INPUT DATA — 오늘의 수집 데이터</div>
+        <div class="field-row">
+          <span class="field-label">날짜</span>
+          <input class="field-input" type="text" id="s1-date" value="2025-01-15" style="width:130px">
+        </div>
+        <div class="field-row">
+          <span class="field-label">기온 (°C)</span>
+          <input class="field-input" type="number" id="s1-temp" value="8.4" step="0.1" style="width:90px">
+        </div>
+        <div class="field-row">
+          <span class="field-label">날씨</span>
+          <select class="field-select" id="s1-weather">
+            <option>맑음</option><option>구름많음</option><option selected>흐림</option>
+            <option>비</option><option>눈</option>
+          </select>
+        </div>
+        <div class="field-row">
+          <span class="field-label">USD/KRW</span>
+          <input class="field-input" type="number" id="s1-usd" value="1452" style="width:100px">
+        </div>
+        <button class="run-btn" onclick="runSim1()">▶ 시트에 추가 시뮬레이션</button>
+
+        <div id="r-sim1" class="result-box">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--muted);margin-bottom:12px">GOOGLE SHEETS PREVIEW</div>
+          <div id="sim1-sheet"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 실습 2: 이메일 제목 & 본문 생성 -->
+  <div class="tab-pane" id="sim2">
+    <div class="example-section">
+      <div class="example-title">📧 Gmail 이메일 자동 생성 시뮬레이터</div>
+      <div class="example-desc">
+        입력값을 바탕으로 이메일 제목과 본문이 어떻게 자동 생성되는지 확인합니다.
+      </div>
+      <div class="playground">
+        <div class="pg-title">▶ INPUT DATA</div>
+        <div class="field-row">
+          <span class="field-label">수신자</span>
+          <input class="field-input" type="text" id="s2-to" value="manager@company.com" style="width:220px">
+        </div>
+        <div class="field-row">
+          <span class="field-label">날짜</span>
+          <input class="field-input" type="text" id="s2-date" value="2025-01-15" style="width:130px">
+        </div>
+        <div class="field-row">
+          <span class="field-label">기온</span>
+          <input class="field-input" type="number" id="s2-temp" value="8.4" step="0.1" style="width:90px">
+          <span class="field-label">날씨</span>
+          <input class="field-input" type="text" id="s2-weather" value="흐림" style="width:90px">
+        </div>
+        <div class="field-row">
+          <span class="field-label">USD</span>
+          <input class="field-input" type="number" id="s2-usd" value="1452" style="width:90px">
+          <span class="field-label">EUR</span>
+          <input class="field-input" type="number" id="s2-eur" value="1573" style="width:90px">
+        </div>
+        <button class="run-btn" onclick="runSim2()">▶ 이메일 생성</button>
+        <div id="r-sim2" class="result-box">
+          <div id="sim2-email"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 실습 3: Drive 파일명 생성 -->
+  <div class="tab-pane" id="sim3">
+    <div class="example-section">
+      <div class="example-title">💾 Google Drive 자동 파일명 생성 시뮬레이터</div>
+      <div class="example-desc">
+        N8N이 Drive에 저장할 때 어떤 파일명과 내용을 만드는지 확인합니다.
+      </div>
+      <div class="playground">
+        <div class="pg-title">▶ INPUT DATA</div>
+        <div class="field-row">
+          <span class="field-label">날짜</span>
+          <input class="field-input" type="text" id="s3-date" value="2025-01-15" style="width:130px">
+        </div>
+        <div class="field-row">
+          <span class="field-label">기온</span>
+          <input class="field-input" type="number" id="s3-temp" value="8.4" step="0.1" style="width:90px">
+          <span class="field-label">날씨</span>
+          <input class="field-input" type="text" id="s3-weather" value="흐림" style="width:90px">
+        </div>
+        <div class="field-row">
+          <span class="field-label">USD</span>
+          <input class="field-input" type="number" id="s3-usd" value="1452" style="width:90px">
+          <span class="field-label">EUR</span>
+          <input class="field-input" type="number" id="s3-eur" value="1573" style="width:90px">
+          <span class="field-label">JPY</span>
+          <input class="field-input" type="number" id="s3-jpy" value="921" style="width:90px">
+        </div>
+        <button class="run-btn" onclick="runSim3()">▶ 파일 생성 시뮬레이션</button>
+        <div id="r-sim3" class="result-box">
+          <div id="sim3-output"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 실습 4: 통계 계산 -->
+  <div class="tab-pane" id="sim4">
+    <div class="example-section">
+      <div class="example-title">🔢 시트 데이터 읽기 → Code 노드 통계 계산</div>
+      <div class="example-desc">
+        Google Sheets에서 환율 데이터를 읽어온 후 Code 노드가 통계를 계산하는 시뮬레이터입니다.
+      </div>
+      <div class="playground">
+        <div class="pg-title">▶ 시트에서 읽어온 데이터 (수정 가능)</div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:12px">최근 7일 USD/KRW 환율 (쉼표로 구분):</div>
+        <input class="field-input" type="text" id="s4-data" value="1461,1448,1452,1459,1445,1455,1450" style="width:100%;max-width:400px">
+        <div style="font-size:12px;color:var(--muted);margin-top:6px">↑ 값을 바꿔서 통계 변화를 확인해보세요</div>
+        <button class="run-btn" style="margin-top:12px" onclick="runSim4()">▶ 통계 계산</button>
+        <div id="r-sim4" class="result-box">
+          <div id="sim4-output"></div>
+        </div>
+      </div>
+
+      <div class="code-block">
+        <div class="code-head"><span class="code-title">Code 노드 — 시트 데이터 통계 계산</span><button class="copy-btn" onclick="copyCode(this)">COPY</button></div>
+        <div class="code-body"><pre><span class="c">// Sheets Get Rows → Code 노드로 연결</span>
+<span class="k">const</span> rates = items.map(i => Number(i.json.USD_KRW));
+
+<span class="k">const</span> avg = rates.reduce((a, b) => a + b, <span class="n">0</span>) / rates.length;
+<span class="k">const</span> max = Math.max(...rates);
+<span class="k">const</span> min = Math.min(...rates);
+<span class="k">const</span> latest = rates[rates.length - <span class="n">1</span>];
+<span class="k">const</span> change = latest - rates[<span class="n">0</span>];  <span class="c">// 기간 대비 변동</span>
+
+<span class="k">return</span> [{
+  json: {
+    기간:    <span class="s">`최근 ${rates.length}일`</span>,
+    평균:    Math.round(avg),
+    최고:    max,
+    최저:    min,
+    최신:    latest,
+    변동:    change > <span class="n">0</span> ? <span class="s">`+${change}`</span> : String(change),
+    추세:    change > <span class="n">0</span> ? <span class="s">"상승 📈"</span> : change < <span class="n">0</span> ? <span class="s">"하락 📉"</span> : <span class="s">"보합 ➡️"</span>
+  }
+}];</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /section examples -->
+
+</div><!-- /wrap -->
+
+<div style="text-align:center;padding:32px;border-top:1px solid var(--border);position:relative;z-index:1">
+  <p style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);letter-spacing:2px">N8N × GOOGLE SHEETS · GMAIL · DRIVE · AUTOMATION GUIDE</p>
+</div>
+
+<script>
+function goTo(id){document.getElementById(id).scrollIntoView({behavior:'smooth',block:'start'})}
+function showTab(btn,id){
+  btn.closest('.section').querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('on'));
+  btn.closest('.section').querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('on'));
+  btn.classList.add('on');
+  document.getElementById(id).classList.add('on');
+}
+function copyCode(btn){
+  const pre=btn.closest('.code-block').querySelector('pre');
+  navigator.clipboard.writeText(pre.innerText).then(()=>{
+    btn.textContent='COPIED!';btn.classList.add('copied');
+    setTimeout(()=>{btn.textContent='COPY';btn.classList.remove('copied');},2000);
+  });
+}
+
+// NAV 스크롤 추적
+window.addEventListener('scroll',()=>{
+  const sections=['sheets-read','sheets-write','project','gmail','drive','examples'];
+  const navItems=document.querySelectorAll('.nav-item');
+  let cur=0;
+  sections.forEach((id,i)=>{
+    const el=document.getElementById(id);
+    if(el&&el.getBoundingClientRect().top<100) cur=i;
+  });
+  navItems.forEach((n,i)=>n.classList.toggle('active',i===cur));
+});
+
+// ─── 실습 1: 시트 기록 시뮬레이션 ───
+function runSim1(){
+  const date=document.getElementById('s1-date').value;
+  const temp=document.getElementById('s1-temp').value;
+  const weather=document.getElementById('s1-weather').value;
+  const usd=Number(document.getElementById('s1-usd').value);
+  const now=new Date();
+  const time=now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0');
+
+  const r=document.getElementById('r-sim1');
+  r.className='result-box show rb-ok';
+  document.getElementById('sim1-sheet').innerHTML=`
+    <div style="background:#0f1923;border:1px solid #1e3a2f;border-radius:10px;overflow:hidden">
+      <div style="background:#0d2218;padding:10px 16px;color:#34a853;font-size:13px;font-weight:600;border-bottom:1px solid #1e3a2f">
+        📊 Append Row 성공 → 시트 맨 아래에 추가됨
+      </div>
+      <table style="width:100%;border-collapse:collapse">
+        <tr>
+          <th style="background:#0a1c12;padding:8px 12px;color:#6bbf8a;font-size:11px;font-family:'JetBrains Mono',monospace;border-right:1px solid #1a2e20;border-bottom:1px solid #1a2e20">날짜</th>
+          <th style="background:#0a1c12;padding:8px 12px;color:#6bbf8a;font-size:11px;font-family:'JetBrains Mono',monospace;border-right:1px solid #1a2e20;border-bottom:1px solid #1a2e20">기온</th>
+          <th style="background:#0a1c12;padding:8px 12px;color:#6bbf8a;font-size:11px;font-family:'JetBrains Mono',monospace;border-right:1px solid #1a2e20;border-bottom:1px solid #1a2e20">날씨</th>
+          <th style="background:#0a1c12;padding:8px 12px;color:#6bbf8a;font-size:11px;font-family:'JetBrains Mono',monospace;border-right:1px solid #1a2e20;border-bottom:1px solid #1a2e20">USD_KRW</th>
+          <th style="background:#0a1c12;padding:8px 12px;color:#6bbf8a;font-size:11px;font-family:'JetBrains Mono',monospace;border-bottom:1px solid #1a2e20">수집시간</th>
+        </tr>
+        <tr style="background:rgba(52,168,83,0.1)">
+          <td style="padding:10px 12px;color:#86efac;font-weight:700;border-right:1px solid #0f2219">${date}</td>
+          <td style="padding:10px 12px;color:#86efac;border-right:1px solid #0f2219">${temp}°C</td>
+          <td style="padding:10px 12px;color:#86efac;border-right:1px solid #0f2219">${weather}</td>
+          <td style="padding:10px 12px;color:#86efac;font-weight:700;border-right:1px solid #0f2219">${usd.toLocaleString()}원</td>
+          <td style="padding:10px 12px;color:#86efac">${time} KST</td>
+        </tr>
+      </table>
+      <div style="padding:10px 16px;font-size:12px;color:#6bbf8a;font-family:'JetBrains Mono',monospace">
+        ✅ Row appended successfully • 표현식: {{ $now.format('HH:mm') }} → ${time}
+      </div>
+    </div>`;
+}
+
+// ─── 실습 2: 이메일 생성 ───
+function runSim2(){
+  const to=document.getElementById('s2-to').value;
+  const date=document.getElementById('s2-date').value;
+  const temp=document.getElementById('s2-temp').value;
+  const weather=document.getElementById('s2-weather').value;
+  const usd=Number(document.getElementById('s2-usd').value);
+  const eur=Number(document.getElementById('s2-eur').value);
+  const parts=date.split('-');
+  const subjectDate=parts.length===3?`${parts[1]}/${parts[2]}`:date;
+
+  const r=document.getElementById('r-sim2');
+  r.className='result-box show rb-neutral';
+  document.getElementById('sim2-email').innerHTML=`
+    <div style="background:#1a1215;border:1px solid rgba(234,67,53,0.25);border-radius:12px;overflow:hidden">
+      <div style="background:#1f1418;padding:14px 20px;border-bottom:1px solid rgba(234,67,53,0.15)">
+        <div style="display:flex;gap:8px;padding:4px 0;font-size:13px"><span style="color:rgba(234,67,53,0.7);min-width:50px;font-weight:600">From:</span><span>n8n-auto@gmail.com</span></div>
+        <div style="display:flex;gap:8px;padding:4px 0;font-size:13px"><span style="color:rgba(234,67,53,0.7);min-width:50px;font-weight:600">To:</span><span>${to}</span></div>
+        <div style="display:flex;gap:8px;padding:4px 0;font-size:13px"><span style="color:rgba(234,67,53,0.7);min-width:50px;font-weight:600">Sub:</span><span style="font-weight:600">[${subjectDate}] 일일 자동 보고서</span></div>
+      </div>
+      <div style="padding:20px">
+        <div style="background:#1a73e8;padding:14px;text-align:center;border-radius:8px;margin-bottom:16px">
+          <div style="color:#fff;font-size:16px;font-weight:700">📊 일일 자동 보고서</div>
+          <div style="color:rgba(255,255,255,0.7);font-size:12px">${date}</div>
+        </div>
+        <div style="font-weight:700;font-size:14px;color:#ea4335;margin:0 0 8px">🌤 오늘의 날씨</div>
+        <div style="font-size:13px;padding:8px 12px;background:rgba(255,255,255,0.05);border-radius:6px;margin-bottom:16px">
+          기온 <strong>${temp}°C</strong> &nbsp;|&nbsp; ${weather}
+        </div>
+        <div style="font-weight:700;font-size:14px;color:#ea4335;margin:0 0 8px">💱 오늘의 환율</div>
+        <table style="width:100%;border-collapse:collapse;font-size:13px">
+          <tr style="background:#1a73e8"><th style="padding:8px;color:#fff">통화</th><th style="padding:8px;color:#fff">환율</th></tr>
+          <tr><td style="padding:8px;border-bottom:1px solid rgba(255,255,255,0.06)">🇺🇸 USD</td><td style="padding:8px;border-bottom:1px solid rgba(255,255,255,0.06);font-weight:700">${usd.toLocaleString()}원</td></tr>
+          <tr><td style="padding:8px">🇪🇺 EUR</td><td style="padding:8px;font-weight:700">${eur.toLocaleString()}원</td></tr>
+        </table>
+        <div style="text-align:center;font-size:11px;color:var(--muted);margin-top:16px">N8N 자동화 시스템 발송</div>
+      </div>
+    </div>`;
+}
+
+// ─── 실습 3: 파일 생성 시뮬레이션 ───
+function runSim3(){
+  const date=document.getElementById('s3-date').value;
+  const temp=document.getElementById('s3-temp').value;
+  const weather=document.getElementById('s3-weather').value;
+  const usd=Number(document.getElementById('s3-usd').value);
+  const eur=Number(document.getElementById('s3-eur').value);
+  const jpy=Number(document.getElementById('s3-jpy').value);
+  const fileName=`보고서_${date}.txt`;
+  const now=new Date();
+  const timeStr=now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0');
+
+  const content=`=== 일일 자동 보고서 ===
+날짜: ${date}
+생성: ${timeStr} KST
+
+[ 날씨 ]
+기온: ${temp}°C
+상태: ${weather}
+
+[ 환율 ]
+USD/KRW: ${usd.toLocaleString()}원
+EUR/KRW: ${eur.toLocaleString()}원
+JPY/KRW: ${jpy.toLocaleString()}원 (100엔)
+========================`;
+
+  const r=document.getElementById('r-sim3');
+  r.className='result-box show rb-ok';
+  document.getElementById('sim3-output').innerHTML=`
+    <div style="margin-bottom:16px">
+      <div style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--muted);margin-bottom:8px">DRIVE — CREATE FROM TEXT</div>
+      <div style="display:flex;gap:12px;align-items:center;padding:12px 16px;background:rgba(66,133,244,0.08);border:1px solid rgba(66,133,244,0.2);border-radius:8px">
+        <span style="font-size:22px">📄</span>
+        <div>
+          <div style="font-weight:700;color:#4285f4">${fileName}</div>
+          <div style="font-size:12px;color:var(--muted)">text/plain · ${content.length} bytes · Google Drive에 저장됨</div>
+        </div>
+        <span style="margin-left:auto;color:var(--green);font-size:18px">✅</span>
+      </div>
+    </div>
+    <div>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--muted);margin-bottom:8px">FILE CONTENT PREVIEW</div>
+      <pre style="font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.8;color:#a5f3a5;background:#020810;padding:16px;border-radius:8px;border:1px solid rgba(255,255,255,0.07);white-space:pre-wrap">${content}</pre>
+    </div>`;
+}
+
+// ─── 실습 4: 통계 계산 ───
+function runSim4(){
+  const raw=document.getElementById('s4-data').value;
+  const rates=raw.split(',').map(s=>Number(s.trim())).filter(n=>!isNaN(n)&&n>0);
+  if(rates.length<2){alert('최소 2개 이상의 숫자를 쉼표로 구분해 입력하세요.');return;}
+
+  const avg=rates.reduce((a,b)=>a+b,0)/rates.length;
+  const max=Math.max(...rates);
+  const min=Math.min(...rates);
+  const latest=rates[rates.length-1];
+  const first=rates[0];
+  const change=latest-first;
+  const trend=change>0?'상승 📈':change<0?'하락 📉':'보합 ➡️';
+
+  const r=document.getElementById('r-sim4');
+  r.className='result-box show rb-neutral';
+  const rows=[
+    ['기간',`최근 ${rates.length}일`,'var(--cyan)'],
+    ['평균',Math.round(avg).toLocaleString()+'원','var(--text)'],
+    ['최고',max.toLocaleString()+'원','var(--red)'],
+    ['최저',min.toLocaleString()+'원','var(--green)'],
+    ['최신',latest.toLocaleString()+'원','var(--cyan)'],
+    ['변동',(change>0?'+':'')+change+'원',change>0?'var(--red)':change<0?'var(--green)':'var(--muted)'],
+    ['추세',trend,'var(--orange)'],
+  ];
+
+  document.getElementById('sim4-output').innerHTML=`
+    <div style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--muted);margin-bottom:12px">CODE 노드 OUTPUT</div>
+    ${rows.map(([k,v,c])=>`
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.05)">
+        <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--muted)">${k}</span>
+        <span style="font-weight:700;font-size:15px;color:${c}">${v}</span>
+      </div>`).join('')}
+    <div style="margin-top:16px;padding:12px;background:rgba(52,168,83,0.08);border:1px solid rgba(52,168,83,0.2);border-radius:8px;font-size:13px">
+      ✅ 이 데이터를 <strong>Gmail 이메일</strong> 또는 <strong>Sheets Append Row</strong>로 연결하면<br>주간 통계 보고서가 완성됩니다!
+    </div>`;
+}
+</script>
+</body>
+</html>

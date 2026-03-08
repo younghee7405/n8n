@@ -1,0 +1,1788 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>N8N 핵심 개념 — 데이터 & 조건 분기 완전 이해</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,700;1,400&family=Noto+Sans+KR:wght@300;400;500;700;900&family=Sora:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root {
+    --bg: #f0f4fb;
+    --bg2: #ffffff;
+    --bg3: #f5f8fe;
+    --accent: #0077cc;
+    --accent2: #6b21d4;
+    --accent3: #c94a10;
+    --green: #00834a;
+    --yellow: #b07800;
+    --text: #1a2340;
+    --muted: #5a6a8a;
+    --border: rgba(0,80,160,0.18);
+    --glow: 0 0 20px rgba(0,119,204,0.25);
+  }
+
+  :root {
+    --bg: #f0f4fb;
+    --bg2: #ffffff;
+    --bg3: #f5f8fe;
+    --accent: #0077cc;
+    --accent2: #6b21d4;
+    --accent3: #c94a10;
+    --green: #00834a;
+    --yellow: #b07800;
+    --text: #1a2340;
+    --muted: #5a6a8a;
+    --border: rgba(0,80,160,0.18);
+    --glow: 0 0 20px rgba(0,119,204,0.25);
+    --indigo: #6366f1;
+    --cyan: #22d3ee;
+    --red: #ef4444;
+    --purple: #a855f7;
+    --orange: #f59e0b;
+    --dim: #4b5563;
+    --s1: #ffffff;
+    --s2: #f5f8fe;
+    --s3: #eef2ff;
+  }
+
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text);line-height:1.6;overflow-x:hidden}
+
+/* GRID BG */
+body::before{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background-image:linear-gradient(rgba(99,102,241,0.03) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(99,102,241,0.03) 1px,transparent 1px);
+  background-size:44px 44px;
+}
+
+/* NAV */
+nav{
+  position:sticky;top:0;z-index:100;
+  background:rgba(6,9,15,0.85);backdrop-filter:blur(16px);
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:0;padding:0 24px;
+  overflow-x:auto;
+}
+.nav-item{
+  padding:16px 18px;font-size:13px;font-weight:500;color:var(--muted);
+  cursor:pointer;white-space:nowrap;border-bottom:2px solid transparent;
+  transition:all .2s;
+}
+.nav-item:hover{color:var(--text)}
+.nav-item.active{color:var(--indigo);border-bottom-color:var(--indigo)}
+
+/* HERO */
+.hero{
+  position:relative;padding:72px 24px 56px;text-align:center;z-index:1;
+}
+.hero::before{
+  content:'';position:absolute;top:-60px;left:50%;transform:translateX(-50%);
+  width:600px;height:300px;
+  background:radial-gradient(ellipse,rgba(99,102,241,0.15) 0%,transparent 70%);
+  pointer-events:none;
+}
+.hero-pill{
+  display:inline-flex;align-items:center;gap:8px;margin-bottom:20px;
+  font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:2px;
+  color:var(--cyan);border:1px solid rgba(34,211,238,0.25);
+  padding:5px 16px;border-radius:100px;background:rgba(34,211,238,0.05);
+}
+.hero h1{
+  font-family:'Sora',sans-serif;font-size:clamp(28px,5vw,52px);font-weight:800;
+  letter-spacing:-1px;margin-bottom:12px;
+  background:linear-gradient(135deg,#fff 30%,var(--indigo));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.hero p{font-size:15px;color:var(--muted);max-width:520px;margin:0 auto}
+
+/* LAYOUT */
+.wrap{max-width:960px;margin:0 auto;padding:0 24px 80px;position:relative;z-index:1}
+
+/* SECTION */
+.section{margin-bottom:64px}
+.section-head{
+  display:flex;align-items:center;gap:14px;margin-bottom:28px;
+  padding-bottom:16px;border-bottom:1px solid var(--border);
+}
+.section-icon{
+  width:40px;height:40px;border-radius:10px;display:flex;align-items:center;
+  justify-content:center;font-size:20px;flex-shrink:0;
+}
+.si-blue{background:rgba(99,102,241,0.15);border:1px solid rgba(99,102,241,0.3)}
+.si-cyan{background:rgba(34,211,238,0.12);border:1px solid rgba(34,211,238,0.25)}
+.si-green{background:rgba(16,185,129,0.12);border:1px solid rgba(16,185,129,0.25)}
+.si-orange{background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.25)}
+.section-head h2{font-family:'Sora',sans-serif;font-size:22px;font-weight:700;letter-spacing:-0.3px}
+.section-sub{font-size:13px;color:var(--muted);margin-top:3px}
+
+/* CONCEPT CARD */
+.concept-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
+@media(max-width:640px){.concept-grid{grid-template-columns:1fr}}
+.concept-card{
+  background:var(--s1);border:1px solid var(--border);border-radius:14px;padding:22px;
+  transition:border-color .3s,transform .2s;
+}
+.concept-card:hover{border-color:rgba(99,102,241,0.3);transform:translateY(-2px)}
+.cc-label{
+  font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:2px;
+  color:var(--muted);margin-bottom:12px;display:flex;align-items:center;gap:6px;
+}
+.cc-label::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--indigo);flex-shrink:0}
+.concept-card h3{font-size:15px;font-weight:700;margin-bottom:10px;color:var(--text)}
+.concept-card p{font-size:13px;color:var(--muted);line-height:1.7}
+.concept-card .highlight{color:var(--cyan);font-weight:600}
+
+/* CODE */
+.code-block{
+  background:#020810;border:1px solid rgba(255,255,255,0.07);
+  border-radius:12px;overflow:hidden;margin:14px 0;
+}
+.code-head{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 16px;background:rgba(255,255,255,0.03);border-bottom:1px solid rgba(255,255,255,0.06);
+}
+.code-title{font-family:'JetBrains Mono',monospace;font-size:11px;color:#8899b8;letter-spacing:1px}
+.copy-btn{
+  font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:1px;
+  background:transparent;color:#8899b8;border:1px solid rgba(136,153,184,0.3);
+  padding:4px 12px;border-radius:6px;cursor:pointer;transition:all .2s;
+}
+.copy-btn:hover{color:var(--cyan);border-color:rgba(34,211,238,0.3)}
+.copy-btn.copied{color:var(--green);border-color:rgba(16,185,129,0.3)}
+.code-body{padding:18px 20px;overflow-x:auto}
+.code-body pre{font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.9;white-space:pre;color:#e2e8f0}
+.k{color:#ff79c6}.s{color:#a5f3a5}.n{color:#79c0ff}.p{color:#ffa657}
+.c{color:#8b9ec8;font-style:italic}.v{color:#f8f8f2}.op{color:#ff79c6}
+.b{color:#bd93f9}.t{color:#ffb86c}
+
+/* EXPLANATION BOX */
+.explain{
+  display:flex;gap:12px;padding:14px 18px;border-radius:10px;margin:10px 0;
+  font-size:13px;line-height:1.7;
+}
+.exp-info{background:rgba(99,102,241,0.07);border:1px solid rgba(99,102,241,0.2)}
+.exp-tip{background:rgba(245,158,11,0.07);border:1px solid rgba(245,158,11,0.2)}
+.exp-warn{background:rgba(248,113,113,0.07);border:1px solid rgba(248,113,113,0.2)}
+.exp-ok{background:rgba(16,185,129,0.07);border:1px solid rgba(16,185,129,0.2)}
+.exp-icon{font-size:16px;flex-shrink:0;margin-top:1px}
+
+/* TABLE */
+.data-table{width:100%;border-collapse:collapse;margin:14px 0;border-radius:10px;overflow:hidden}
+.data-table th{
+  background:var(--s2);padding:10px 16px;text-align:left;
+  font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:1px;color:var(--muted);
+  border-bottom:1px solid var(--border);
+}
+.data-table td{
+  padding:11px 16px;border-bottom:1px solid rgba(255,255,255,0.04);font-size:13px;
+  background:var(--s1);
+}
+.data-table tr:last-child td{border-bottom:none}
+.badge{
+  display:inline-block;font-family:'JetBrains Mono',monospace;font-size:10px;
+  padding:2px 8px;border-radius:4px;letter-spacing:0.5px;
+}
+.bd-str{background:rgba(165,243,165,0.12);color:#a5f3a5;border:1px solid rgba(165,243,165,0.2)}
+.bd-num{background:rgba(121,192,255,0.12);color:#79c0ff;border:1px solid rgba(121,192,255,0.2)}
+.bd-bool{background:rgba(255,184,108,0.12);color:#ffb86c;border:1px solid rgba(255,184,108,0.2)}
+.bd-arr{background:rgba(189,147,249,0.12);color:#bd93f9;border:1px solid rgba(189,147,249,0.2)}
+.bd-obj{background:rgba(99,102,241,0.15);color:#818cf8;border:1px solid rgba(99,102,241,0.3)}
+
+/* IF VISUALIZER */
+.if-viz{
+  background:var(--s1);border:1px solid var(--border);border-radius:16px;
+  padding:28px;margin:20px 0;
+}
+.if-flow{display:flex;flex-direction:column;align-items:center;gap:0}
+.if-node{
+  background:var(--s2);border:2px solid var(--indigo);border-radius:12px;
+  padding:14px 28px;font-size:14px;font-weight:600;color:var(--indigo);
+  box-shadow:0 0 20px rgba(99,102,241,0.2);
+}
+.if-arrow-down{
+  display:flex;flex-direction:column;align-items:center;gap:0;
+}
+.if-arrow-down .line{width:2px;height:30px;background:var(--dim)}
+.if-arrow-down .tip{border:5px solid transparent;border-top:7px solid var(--dim)}
+.if-branches{display:grid;grid-template-columns:1fr 1fr;gap:20px;width:100%;max-width:480px}
+.branch{display:flex;flex-direction:column;align-items:center;gap:8px}
+.branch-line{display:flex;flex-direction:column;align-items:center}
+.branch-label{
+  font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;letter-spacing:1px;
+  padding:3px 12px;border-radius:4px;
+}
+.bl-true{background:rgba(16,185,129,0.15);color:var(--green);border:1px solid rgba(16,185,129,0.3)}
+.bl-false{background:rgba(248,113,113,0.12);color:var(--red);border:1px solid rgba(248,113,113,0.2)}
+.branch-node{
+  background:var(--s3);border-radius:10px;padding:12px 16px;
+  font-size:13px;text-align:center;width:100%;border:1px solid var(--border);
+}
+
+/* OPERATORS TABLE */
+.op-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin:14px 0}
+.op-card{
+  background:var(--s2);border:1px solid var(--border);border-radius:10px;
+  padding:14px;transition:border-color .2s;
+}
+.op-card:hover{border-color:rgba(99,102,241,0.3)}
+.op-symbol{font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--indigo);margin-bottom:6px}
+.op-name{font-size:12px;font-weight:600;margin-bottom:4px}
+.op-example{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted)}
+
+/* ═══ INTERACTIVE EXAMPLES ═══ */
+.example-section{
+  background:linear-gradient(135deg,rgba(99,102,241,0.06),rgba(34,211,238,0.03));
+  border:1px solid rgba(99,102,241,0.2);border-radius:18px;
+  padding:28px;margin-top:20px;
+}
+.example-title{
+  font-family:'Sora',sans-serif;font-size:18px;font-weight:700;
+  margin-bottom:6px;display:flex;align-items:center;gap:10px;
+}
+.example-desc{font-size:13px;color:var(--muted);margin-bottom:24px;line-height:1.7}
+
+/* PLAYGROUND */
+.playground{
+  background:var(--s1);border:1px solid var(--border);border-radius:12px;
+  padding:20px;margin-bottom:16px;
+}
+.pg-title{
+  font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:2px;
+  color:var(--cyan);margin-bottom:16px;
+}
+.field-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.field-label{font-size:13px;color:var(--muted);min-width:80px}
+.field-input{
+  background:var(--s2);border:1px solid var(--border);border-radius:8px;
+  color:var(--text);font-family:'JetBrains Mono',monospace;font-size:13px;
+  padding:8px 12px;outline:none;transition:border-color .2s;
+}
+.field-input:focus{border-color:var(--indigo)}
+.field-input[type=number]{width:120px}
+.field-input[type=text]{width:180px}
+.field-select{
+  background:var(--s2);border:1px solid var(--border);border-radius:8px;
+  color:var(--text);font-size:13px;padding:8px 12px;
+  outline:none;cursor:pointer;
+}
+.run-btn{
+  font-size:13px;font-weight:700;font-family:'Noto Sans KR',sans-serif;
+  background:linear-gradient(135deg,var(--indigo),#4f46e5);color:#fff;
+  border:none;border-radius:8px;padding:10px 22px;cursor:pointer;
+  transition:all .2s;box-shadow:0 0 16px rgba(99,102,241,0.3);
+}
+.run-btn:hover{transform:translateY(-1px);box-shadow:0 0 24px rgba(99,102,241,0.5)}
+.run-btn:active{transform:translateY(0)}
+
+/* RESULT */
+.result-box{
+  margin-top:14px;border-radius:10px;padding:16px 20px;
+  display:none;animation:slideIn .3s ease;
+}
+.result-box.show{display:block}
+@keyframes slideIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+.rb-true{background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3)}
+.rb-false{background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.2)}
+.rb-neutral{background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.2)}
+.result-path{
+  font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:1px;
+  margin-bottom:8px;
+}
+.result-value{font-size:14px;font-weight:600}
+
+/* SWITCH VIZ */
+.switch-viz{
+  display:flex;flex-direction:column;gap:8px;margin-top:14px;
+}
+.sw-rule{
+  display:flex;align-items:center;gap:12px;padding:10px 14px;
+  background:var(--s2);border:1px solid var(--border);border-radius:8px;
+  font-size:13px;transition:all .2s;
+}
+.sw-rule.active-rule{
+  background:rgba(99,102,241,0.12);border-color:rgba(99,102,241,0.4);
+}
+.sw-arrow{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted)}
+.sw-output{color:var(--text);font-weight:500}
+.sw-check{font-size:16px}
+
+/* N8N EXPRESSION BOX */
+.expr-demo{
+  background:var(--s2);border:1px solid var(--border);border-radius:10px;
+  padding:16px;margin:10px 0;
+}
+.expr-input{
+  display:flex;align-items:flex-start;gap:12px;margin-bottom:10px;
+}
+.expr-label{font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace;letter-spacing:1px;min-width:60px;padding-top:2px}
+.expr-code{
+  font-family:'JetBrains Mono',monospace;font-size:13px;
+  background:rgba(34,211,238,0.07);color:var(--cyan);
+  padding:6px 12px;border-radius:6px;border:1px solid rgba(34,211,238,0.15);
+  flex:1;
+}
+.expr-result{
+  display:flex;align-items:center;gap:12px;
+}
+.expr-arrow{font-size:16px;color:var(--indigo)}
+.expr-val{
+  font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;
+  color:var(--green);background:rgba(16,185,129,0.08);
+  padding:6px 12px;border-radius:6px;border:1px solid rgba(16,185,129,0.2);
+}
+
+/* TAB */
+.tabs{display:flex;gap:4px;background:var(--s2);padding:4px;border-radius:10px;margin-bottom:16px}
+.tab-btn{flex:1;padding:8px 12px;background:transparent;border:none;border-radius:7px;
+  color:var(--muted);font-size:12px;font-weight:600;cursor:pointer;transition:all .2s;font-family:'JetBrains Mono',monospace;letter-spacing:1px}
+.tab-btn.on{background:var(--indigo);color:#fff}
+.tab-pane{display:none}.tab-pane.on{display:block}
+
+/* DIVIDER */
+.divider{height:1px;background:var(--border);margin:48px 0}
+
+/* SCROLLBAR */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--dim);border-radius:3px}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-item active" onclick="navTo(this,'json')">📦 JSON & 데이터</div>
+  <div class="nav-item" onclick="navTo(this,'expr')">✨ 표현식</div>
+  <div class="nav-item" onclick="navTo(this,'if')">🔀 IF 노드</div>
+  <div class="nav-item" onclick="navTo(this,'switch')">🔁 Switch 노드</div>
+  <div class="nav-item" onclick="navTo(this,'http')">🌐 HTTP & API</div>
+  <div class="nav-item" onclick="navTo(this,'setcode')">⚙️ Set & Code</div>
+  <div class="nav-item" onclick="navTo(this,'examples')">🧪 실습 예제</div>
+</nav>
+
+<div class="hero">
+  <div class="hero-pill">📖 N8N 핵심 개념 완전 정복</div>
+  <h1>N8N 핵심 개념<br>완전 정복 가이드</h1>
+  <p>JSON · 표현식 · IF/Switch · HTTP API · Set/Code 노드까지<br>실습 예제로 완전히 이해합니다</p>
+</div>
+
+<div class="wrap">
+
+<!-- ═══════════════════════════════════════ -->
+<!-- SECTION 1: JSON & 데이터 구조          -->
+<!-- ═══════════════════════════════════════ -->
+<div class="section" id="json">
+  <div class="section-head">
+    <div class="section-icon si-blue">📦</div>
+    <div>
+      <h2>N8N 데이터 구조 — JSON & 아이템</h2>
+      <div class="section-sub">N8N에서 데이터가 어떻게 생겼고 어떻게 흘러가는지 이해합니다</div>
+    </div>
+  </div>
+
+  <!-- JSON 기초 -->
+  <div class="concept-grid">
+    <div class="concept-card">
+      <div class="cc-label">JSON이란?</div>
+      <h3>이름표가 붙은 데이터 상자</h3>
+      <p>JSON은 데이터를 담는 표준 형식이에요.<br>
+      <span class="highlight">"이름": "값"</span> 쌍으로 구성되고,<br>
+      중괄호 { } 로 감쌉니다.</p>
+    </div>
+    <div class="concept-card">
+      <div class="cc-label">아이템(Item)이란?</div>
+      <h3>N8N 데이터의 최소 단위</h3>
+      <p>노드와 노드 사이를 흐르는 데이터 한 덩어리를 <span class="highlight">아이템</span>이라고 해요.<br>
+      아이템 하나 = JSON 객체 하나입니다.</p>
+    </div>
+  </div>
+
+  <!-- JSON 예시 -->
+  <div class="code-block">
+    <div class="code-head">
+      <span class="code-title">JSON 기본 구조</span>
+      <button class="copy-btn" onclick="copyCode(this)">COPY</button>
+    </div>
+    <div class="code-body"><pre>{
+  <span class="p">"이름"</span>: <span class="s">"홍길동"</span>,          <span class="c">// 문자열 (String)</span>
+  <span class="p">"나이"</span>: <span class="n">30</span>,               <span class="c">// 숫자 (Number)</span>
+  <span class="p">"재직중"</span>: <span class="t">true</span>,           <span class="c">// 참/거짓 (Boolean)</span>
+  <span class="p">"취미"</span>: [<span class="s">"독서"</span>, <span class="s">"등산"</span>],  <span class="c">// 배열 (Array)</span>
+  <span class="p">"주소"</span>: {                   <span class="c">// 중첩 객체 (Object)</span>
+    <span class="p">"시"</span>: <span class="s">"서울"</span>,
+    <span class="p">"구"</span>: <span class="s">"강남구"</span>
+  }
+}</pre>
+    </div>
+  </div>
+
+  <!-- 데이터 타입 -->
+  <table class="data-table">
+    <tr>
+      <th>타입</th><th>예시</th><th>설명</th><th>N8N 사용 예</th>
+    </tr>
+    <tr>
+      <td><span class="badge bd-str">String</span></td>
+      <td><code style="color:#a5f3a5;font-family:monospace">"홍길동"</code></td>
+      <td>큰따옴표로 감싼 문자</td>
+      <td>이름, 주소, 메시지</td>
+    </tr>
+    <tr>
+      <td><span class="badge bd-num">Number</span></td>
+      <td><code style="color:#79c0ff;font-family:monospace">1450.50</code></td>
+      <td>따옴표 없는 숫자</td>
+      <td>환율, 가격, 나이</td>
+    </tr>
+    <tr>
+      <td><span class="badge bd-bool">Boolean</span></td>
+      <td><code style="color:#ffb86c;font-family:monospace">true / false</code></td>
+      <td>참 또는 거짓</td>
+      <td>재직여부, 완료여부</td>
+    </tr>
+    <tr>
+      <td><span class="badge bd-arr">Array</span></td>
+      <td><code style="color:#bd93f9;font-family:monospace">["a","b","c"]</code></td>
+      <td>대괄호 [ ] 목록</td>
+      <td>태그 목록, 취미 목록</td>
+    </tr>
+    <tr>
+      <td><span class="badge bd-obj">Object</span></td>
+      <td><code style="color:#818cf8;font-family:monospace">{"시":"서울"}</code></td>
+      <td>중괄호 { } 중첩</td>
+      <td>주소, 설정값 묶음</td>
+    </tr>
+  </table>
+
+  <!-- 아이템 vs 리스트 -->
+  <div class="explain exp-info">
+    <span class="exp-icon">💡</span>
+    <span><strong>아이템 리스트:</strong> 고객이 10명이면 아이템이 10개 흐릅니다. 각 아이템은 한 고객의 JSON 데이터예요. 노드는 기본적으로 아이템을 하나씩 처리하고 결과를 내보냅니다.</span>
+  </div>
+
+  <div class="code-block">
+    <div class="code-head">
+      <span class="code-title">N8N 아이템 리스트 구조 (내부 형태)</span>
+      <button class="copy-btn" onclick="copyCode(this)">COPY</button>
+    </div>
+    <div class="code-body"><pre>[
+  { <span class="p">"json"</span>: { <span class="p">"이름"</span>: <span class="s">"홍길동"</span>, <span class="p">"점수"</span>: <span class="n">85</span> } },  <span class="c">// 아이템 1</span>
+  { <span class="p">"json"</span>: { <span class="p">"이름"</span>: <span class="s">"김영희"</span>, <span class="p">"점수"</span>: <span class="n">72</span> } },  <span class="c">// 아이템 2</span>
+  { <span class="p">"json"</span>: { <span class="p">"이름"</span>: <span class="s">"이철수"</span>, <span class="p">"점수"</span>: <span class="n">55</span> } }   <span class="c">// 아이템 3</span>
+]</pre>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ═══════════════════════════════════════ -->
+<!-- SECTION 2: 표현식(Expression)          -->
+<!-- ═══════════════════════════════════════ -->
+<div class="section" id="expr">
+  <div class="section-head">
+    <div class="section-icon si-cyan">✨</div>
+    <div>
+      <h2>표현식 (Expression) 완전 정복</h2>
+      <div class="section-sub">{{ }} 이중 중괄호 안에 코드를 써서 데이터를 동적으로 참조합니다</div>
+    </div>
+  </div>
+
+  <div class="concept-grid">
+    <div class="concept-card">
+      <div class="cc-label">고정값 모드</div>
+      <h3>항상 같은 값</h3>
+      <p>텍스트 필드에 <span class="highlight">"안녕하세요"</span>를 직접 입력하면 항상 그 문자열만 출력됩니다. 변하지 않아요.</p>
+    </div>
+    <div class="concept-card">
+      <div class="cc-label">표현식 모드</div>
+      <h3>실행 시 동적으로 계산</h3>
+      <p><span class="highlight">{{ $json.이름 }}</span>을 입력하면 실행할 때마다 현재 아이템의 이름 필드 값을 읽어옵니다.</p>
+    </div>
+  </div>
+
+  <!-- 핵심 변수 -->
+  <div class="code-block">
+    <div class="code-head">
+      <span class="code-title">자주 쓰는 표현식 모음</span>
+      <button class="copy-btn" onclick="copyCode(this)">COPY</button>
+    </div>
+    <div class="code-body"><pre><span class="c">// ─── 현재 아이템 데이터 접근 ───</span>
+<span class="b">{{ $json.이름 }}</span>              <span class="c">// 현재 아이템의 "이름" 필드</span>
+<span class="b">{{ $json.주소.시 }}</span>           <span class="c">// 중첩 객체 접근</span>
+<span class="b">{{ $json.취미[0] }}</span>           <span class="c">// 배열 첫 번째 항목</span>
+<span class="b">{{ $json.취미.length }}</span>       <span class="c">// 배열 길이</span>
+
+<span class="c">// ─── 시간 관련 ───</span>
+<span class="b">{{ $now }}</span>                    <span class="c">// 현재 시간 (ISO 형식)</span>
+<span class="b">{{ $now.format('yyyy-MM-dd') }}</span>  <span class="c">// 2025-01-15</span>
+<span class="b">{{ $now.format('HH:mm') }}</span>    <span class="c">// 09:00</span>
+
+<span class="c">// ─── 문자열 합치기 ───</span>
+<span class="b">{{ "안녕하세요 " + $json.이름 + " 님!" }}</span>
+
+<span class="c">// ─── 숫자 계산 ───</span>
+<span class="b">{{ $json.가격 * 1.1 }}</span>       <span class="c">// 10% 추가</span>
+<span class="b">{{ Math.round($json.환율) }}</span>  <span class="c">// 반올림</span>
+
+<span class="c">// ─── 특정 노드 데이터 참조 ───</span>
+<span class="b">{{ $('HTTP Request').item.json.title }}</span>  <span class="c">// 다른 노드 데이터</span>
+
+<span class="c">// ─── 실행 정보 ───</span>
+<span class="b">{{ $runIndex }}</span>              <span class="c">// 몇 번째 실행인지 (0부터)</span>
+<span class="b">{{ $itemIndex }}</span>             <span class="c">// 몇 번째 아이템인지</span></pre>
+    </div>
+  </div>
+
+  <!-- 표현식 데모 -->
+  <div class="expr-demo">
+    <div style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--muted);margin-bottom:14px">EXPRESSION DEMO — 입력 데이터: {"이름":"홍길동","점수":85,"가격":10000}</div>
+
+    <div class="expr-input">
+      <span class="expr-label">표현식</span>
+      <span class="expr-code">{{ $json.이름 }}</span>
+    </div>
+    <div class="expr-result">
+      <span class="expr-arrow">→</span>
+      <span class="expr-val">"홍길동"</span>
+      <span style="font-size:12px;color:var(--muted);margin-left:8px">이름 필드 값 출력</span>
+    </div>
+
+    <div style="height:1px;background:var(--border);margin:12px 0"></div>
+
+    <div class="expr-input">
+      <span class="expr-label">표현식</span>
+      <span class="expr-code">{{ "안녕하세요 " + $json.이름 + "님, 점수는 " + $json.점수 + "점입니다." }}</span>
+    </div>
+    <div class="expr-result">
+      <span class="expr-arrow">→</span>
+      <span class="expr-val">"안녕하세요 홍길동님, 점수는 85점입니다."</span>
+    </div>
+
+    <div style="height:1px;background:var(--border);margin:12px 0"></div>
+
+    <div class="expr-input">
+      <span class="expr-label">표현식</span>
+      <span class="expr-code">{{ $json.가격 * 1.1 }}</span>
+    </div>
+    <div class="expr-result">
+      <span class="expr-arrow">→</span>
+      <span class="expr-val">11000</span>
+      <span style="font-size:12px;color:var(--muted);margin-left:8px">10% 부가세 포함 가격</span>
+    </div>
+  </div>
+
+  <div class="explain exp-tip">
+    <span class="exp-icon">💡</span>
+    <span><strong>표현식 모드 전환 방법:</strong> N8N 노드 설정에서 입력 필드 오른쪽의 <strong>=</strong> 아이콘 또는 <strong>fx</strong> 아이콘을 클릭하면 표현식 모드로 바뀌고 {{ }} 를 쓸 수 있게 됩니다.</span>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ═══════════════════════════════════════ -->
+<!-- SECTION 3: IF 노드                      -->
+<!-- ═══════════════════════════════════════ -->
+<div class="section" id="if">
+  <div class="section-head">
+    <div class="section-icon si-green">🔀</div>
+    <div>
+      <h2>IF 노드 — 조건 분기</h2>
+      <div class="section-sub">"만약 ~이라면" 조건에 따라 데이터를 두 경로로 나눕니다</div>
+    </div>
+  </div>
+
+  <!-- IF 구조 시각화 -->
+  <div class="if-viz">
+    <div class="if-flow">
+      <div class="if-node">🔀 IF 노드</div>
+      <div class="if-arrow-down"><div class="line"></div><div class="tip"></div></div>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--muted);margin-bottom:12px">조건: {{ $json.점수 }} >= 60</div>
+      <div class="if-branches">
+        <div class="branch">
+          <span class="branch-label bl-true">TRUE ✓</span>
+          <div style="width:2px;height:20px;background:var(--green);margin:6px 0"></div>
+          <div class="branch-node" style="border-color:rgba(16,185,129,0.3)">
+            ✅ 점수가 60 이상<br>
+            <span style="color:var(--green);font-weight:600">"합격" 처리</span>
+          </div>
+        </div>
+        <div class="branch">
+          <span class="branch-label bl-false">FALSE ✗</span>
+          <div style="width:2px;height:20px;background:var(--red);margin:6px 0"></div>
+          <div class="branch-node" style="border-color:rgba(248,113,113,0.2)">
+            ❌ 점수가 60 미만<br>
+            <span style="color:var(--red);font-weight:600">"불합격" 처리</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 비교 연산자 -->
+  <div class="op-grid">
+    <div class="op-card">
+      <div class="op-symbol">=</div>
+      <div class="op-name">Equal (같다)</div>
+      <div class="op-example">점수 = 100</div>
+    </div>
+    <div class="op-card">
+      <div class="op-symbol">≠</div>
+      <div class="op-name">Not Equal (다르다)</div>
+      <div class="op-example">상태 ≠ "완료"</div>
+    </div>
+    <div class="op-card">
+      <div class="op-symbol">&gt;</div>
+      <div class="op-name">Larger Than (크다)</div>
+      <div class="op-example">가격 &gt; 10000</div>
+    </div>
+    <div class="op-card">
+      <div class="op-symbol">&lt;</div>
+      <div class="op-name">Smaller Than (작다)</div>
+      <div class="op-example">재고 &lt; 5</div>
+    </div>
+    <div class="op-card">
+      <div class="op-symbol">⊇</div>
+      <div class="op-name">Contains (포함)</div>
+      <div class="op-example">이름 contains "김"</div>
+    </div>
+    <div class="op-card">
+      <div class="op-symbol">∅</div>
+      <div class="op-name">Is Empty (비어있다)</div>
+      <div class="op-example">이메일 is empty</div>
+    </div>
+  </div>
+
+  <!-- 다중 조건 -->
+  <div class="code-block">
+    <div class="code-head">
+      <span class="code-title">AND / OR 다중 조건</span>
+      <button class="copy-btn" onclick="copyCode(this)">COPY</button>
+    </div>
+    <div class="code-body"><pre><span class="c">// AND 조건: 두 조건 모두 참이어야 TRUE</span>
+조건1: <span class="b">{{ $json.점수 }}</span> <span class="op">&gt;=</span> <span class="n">60</span>
+조건2: <span class="b">{{ $json.출석 }}</span> <span class="op">=</span> <span class="t">true</span>
+→ 점수가 60 이상 AND 출석이 참인 경우에만 합격
+
+<span class="c">// OR 조건: 하나만 참이면 TRUE</span>
+조건1: <span class="b">{{ $json.점수 }}</span> <span class="op">&gt;=</span> <span class="n">90</span>
+조건2: <span class="b">{{ $json.특별상 }}</span> <span class="op">=</span> <span class="t">true</span>
+→ 고득점 OR 특별상 수상자면 우수상 수여</pre>
+    </div>
+  </div>
+
+  <div class="explain exp-warn">
+    <span class="exp-icon">⚠️</span>
+    <span><strong>자주 하는 실수:</strong> 숫자를 비교할 때 값 타입을 꼭 확인하세요. <code style="font-family:monospace;color:var(--cyan)">"60"</code>(문자열)과 <code style="font-family:monospace;color:var(--cyan)">60</code>(숫자)은 다릅니다. API에서 가져온 숫자가 문자열로 되어 있으면 <code style="font-family:monospace;color:var(--cyan)">Number($json.점수)</code>로 변환하세요.</span>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ═══════════════════════════════════════ -->
+<!-- SECTION 4: Switch 노드                  -->
+<!-- ═══════════════════════════════════════ -->
+<div class="section" id="switch">
+  <div class="section-head">
+    <div class="section-icon si-orange">🔁</div>
+    <div>
+      <h2>Switch 노드 — 여러 경우 분기</h2>
+      <div class="section-sub">IF는 2개, Switch는 N개의 경로로 분기합니다</div>
+    </div>
+  </div>
+
+  <div class="concept-grid">
+    <div class="concept-card">
+      <div class="cc-label">IF 노드</div>
+      <h3>참 / 거짓 — 2가지</h3>
+      <p>조건 하나. 결과는 무조건 TRUE 또는 FALSE 두 갈래로만 나뉩니다.</p>
+    </div>
+    <div class="concept-card">
+      <div class="cc-label">Switch 노드</div>
+      <h3>Rule 1 / 2 / 3... — N가지</h3>
+      <p>여러 조건을 순서대로 체크해서 처음 맞는 경로로 보냅니다. 없으면 Fallback 처리.</p>
+    </div>
+  </div>
+
+  <!-- Switch 예시 코드 -->
+  <div class="code-block">
+    <div class="code-head">
+      <span class="code-title">Switch 노드 — 요일별 처리 예시</span>
+      <button class="copy-btn" onclick="copyCode(this)">COPY</button>
+    </div>
+    <div class="code-body"><pre><span class="c">// Switch 노드 설정값 (Rules 모드)</span>
+
+Value: <span class="b">{{ $json.요일 }}</span>
+
+Rule 1: <span class="b">{{ $json.요일 }}</span> <span class="op">=</span> <span class="s">"월요일"</span>  → Output 0 (<span class="s">"한 주를 시작합니다!"</span>)
+Rule 2: <span class="b">{{ $json.요일 }}</span> <span class="op">=</span> <span class="s">"금요일"</span>  → Output 1 (<span class="s">"불금입니다! 🎉"</span>)
+Rule 3: <span class="b">{{ $json.요일 }}</span> <span class="op">=</span> <span class="s">"토요일"</span>  → Output 2 (<span class="s">"주말 시작!"</span>)
+Rule 4: <span class="b">{{ $json.요일 }}</span> <span class="op">=</span> <span class="s">"일요일"</span>  → Output 3 (<span class="s">"내일 월요일..."</span>)
+Fallback                            → Output 4 (<span class="s">"평범한 평일"</span>)</pre>
+    </div>
+  </div>
+
+  <!-- Switch 점수 등급 예시 -->
+  <div class="code-block">
+    <div class="code-head">
+      <span class="code-title">Switch 노드 — 점수로 등급 나누기</span>
+      <button class="copy-btn" onclick="copyCode(this)">COPY</button>
+    </div>
+    <div class="code-body"><pre>Rule 1: <span class="b">{{ $json.점수 }}</span> <span class="op">&gt;=</span> <span class="n">90</span>   → Output 0 (등급: <span class="s">"A"</span>, <span class="s">"매우 우수"</span>)
+Rule 2: <span class="b">{{ $json.점수 }}</span> <span class="op">&gt;=</span> <span class="n">80</span>   → Output 1 (등급: <span class="s">"B"</span>, <span class="s">"우수"</span>)
+Rule 3: <span class="b">{{ $json.점수 }}</span> <span class="op">&gt;=</span> <span class="n">70</span>   → Output 2 (등급: <span class="s">"C"</span>, <span class="s">"양호"</span>)
+Rule 4: <span class="b">{{ $json.점수 }}</span> <span class="op">&gt;=</span> <span class="n">60</span>   → Output 3 (등급: <span class="s">"D"</span>, <span class="s">"미흡"</span>)
+Fallback                     → Output 4 (등급: <span class="s">"F"</span>, <span class="s">"불합격"</span>)
+
+<span class="c">// 주의: Switch는 위에서 아래로 순서대로 체크합니다.</span>
+<span class="c">// 95점은 Rule 1 (>=90)에서 먼저 걸림 → Output 0으로 이동</span></pre>
+    </div>
+  </div>
+
+  <div class="explain exp-tip">
+    <span class="exp-icon">💡</span>
+    <span><strong>Fallback 설정:</strong> Switch 노드에서 어떤 Rule에도 해당되지 않는 경우를 위해 반드시 Fallback 출력을 설정해두세요. 없으면 해당 아이템이 그냥 사라집니다!</span>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ═══════════════════════════════════════ -->
+<!-- SECTION 5: HTTP Request & API          -->
+<!-- ═══════════════════════════════════════ -->
+<div class="section" id="http">
+  <div class="section-head">
+    <div class="section-icon si-cyan">🌐</div>
+    <div>
+      <h2>HTTP Request & API 연동 기초</h2>
+      <div class="section-sub">외부 서비스와 데이터를 주고받는 N8N의 핵심 노드</div>
+    </div>
+  </div>
+
+  <div class="concept-grid">
+    <div class="concept-card">
+      <div class="cc-label">API란?</div>
+      <h3>프로그램 사이의 소통 창구</h3>
+      <p>API는 두 서비스가 데이터를 주고받는 규칙이에요. N8N이 날씨 서버에 <span class="highlight">"서울 날씨 알려줘"</span>라고 요청하면, 서버가 JSON으로 응답하는 구조입니다.</p>
+    </div>
+    <div class="concept-card">
+      <div class="cc-label">HTTP Request 노드</div>
+      <h3>N8N의 인터넷 연결 도구</h3>
+      <p>HTTP Request 노드는 N8N에서 어떤 API든 호출할 수 있는 범용 노드입니다. URL만 알면 <span class="highlight">400개 이상의 서비스</span>와 연동 가능해요.</p>
+    </div>
+  </div>
+
+  <!-- GET vs POST -->
+  <div class="code-block">
+    <div class="code-head"><span class="code-title">GET vs POST 차이점</span><button class="copy-btn" onclick="copyCode(this)">COPY</button></div>
+    <div class="code-body"><pre><span class="c">// ─── GET 요청: 데이터를 가져올 때 (조회) ───</span>
+<span class="k">Method</span>: GET
+<span class="k">URL</span>: <span class="s">https://api.openweathermap.org/data/2.5/weather</span>
+<span class="k">Query Params</span>:
+  q: <span class="s">Seoul</span>         <span class="c">// URL에 붙는 파라미터: ?q=Seoul&appid=xxx</span>
+  appid: <span class="s">발급받은API키</span>
+  units: <span class="s">metric</span>   <span class="c">// 섭씨 온도</span>
+  lang: <span class="s">kr</span>        <span class="c">// 한국어 결과</span>
+
+<span class="c">// → 최종 요청 URL</span>
+<span class="s">https://api.openweathermap.org/data/2.5/weather?q=Seoul&appid=xxx&units=metric</span>
+
+<span class="c">// ─── POST 요청: 데이터를 보낼 때 (전송/생성) ───</span>
+<span class="k">Method</span>: POST
+<span class="k">URL</span>: <span class="s">https://api.telegram.org/bot{TOKEN}/sendMessage</span>
+<span class="k">Body</span> (JSON):
+{
+  <span class="p">"chat_id"</span>: <span class="s">"123456789"</span>,
+  <span class="p">"text"</span>: <span class="s">"안녕하세요!"</span>
+}
+<span class="c">// Body는 URL에 노출되지 않고 요청 본문에 숨겨 전송됨</span></pre>
+    </div>
+  </div>
+
+  <!-- Headers & Query Params -->
+  <div class="concept-grid">
+    <div class="concept-card">
+      <div class="cc-label">Query Parameters</div>
+      <h3>URL 뒤에 붙는 조건값</h3>
+      <p>GET 요청에서 검색 조건, 필터, API 키 등을 전달할 때 사용해요.<br>
+      <span class="highlight">?key=value&key2=value2</span> 형태로 URL 뒤에 붙습니다.</p>
+    </div>
+    <div class="concept-card">
+      <div class="cc-label">Headers</div>
+      <h3>요청의 메타정보 & 인증</h3>
+      <p>API 인증 토큰을 전달하거나 데이터 형식을 알릴 때 사용해요.<br>
+      <span class="highlight">Authorization: Bearer {토큰}</span>이 가장 많이 쓰입니다.</p>
+    </div>
+  </div>
+
+  <div class="code-block">
+    <div class="code-head"><span class="code-title">Headers 설정 예시</span><button class="copy-btn" onclick="copyCode(this)">COPY</button></div>
+    <div class="code-body"><pre><span class="c">// N8N HTTP Request 노드 → Headers 탭에 추가</span>
+
+<span class="c">// 1. Bearer Token 인증 (가장 일반적)</span>
+Authorization: Bearer eyJhbGciOiJIUzI1...
+
+<span class="c">// 2. API Key 방식</span>
+X-API-Key: your-api-key-here
+
+<span class="c">// 3. JSON 데이터 전송 선언</span>
+Content-Type: application/json
+
+<span class="c">// 4. 노션 API 예시</span>
+Authorization: Bearer secret_xxxxx
+Notion-Version: 2022-06-28
+Content-Type: application/json</pre>
+    </div>
+  </div>
+
+  <!-- 실습 6: 날씨 API -->
+  <div class="example-section">
+    <div class="example-title">🌤 실습 6 — 공공 날씨 API 연동 (OpenWeatherMap)</div>
+    <div class="example-desc">
+      OpenWeatherMap API로 서울 날씨를 가져오는 설정입니다.<br>
+      <strong>무료 API 키 발급:</strong> openweathermap.org → 회원가입 → API Keys 탭 (발급 후 약 10분 대기)
+    </div>
+
+    <div class="code-block">
+      <div class="code-head"><span class="code-title">HTTP Request 노드 설정</span><button class="copy-btn" onclick="copyCode(this)">COPY</button></div>
+      <div class="code-body"><pre><span class="c">// ─── HTTP Request 노드 설정 ───</span>
+Method: <span class="k">GET</span>
+URL: <span class="s">https://api.openweathermap.org/data/2.5/weather</span>
+
+<span class="c">// Query Parameters 추가</span>
+q: <span class="s">Seoul</span>
+appid: <span class="s">여기에_API_키_입력</span>
+units: <span class="s">metric</span>
+lang: <span class="s">kr</span>
+
+<span class="c">// ─── 응답 JSON 구조 ───</span>
+{
+  <span class="p">"name"</span>: <span class="s">"Seoul"</span>,              <span class="c">// 도시명</span>
+  <span class="p">"main"</span>: {
+    <span class="p">"temp"</span>: <span class="n">15.3</span>,             <span class="c">// 현재 기온 (섭씨)</span>
+    <span class="p">"humidity"</span>: <span class="n">65</span>,           <span class="c">// 습도 (%)</span>
+    <span class="p">"feels_like"</span>: <span class="n">13.8</span>        <span class="c">// 체감 온도</span>
+  },
+  <span class="p">"weather"</span>: [{
+    <span class="p">"description"</span>: <span class="s">"맑음"</span>      <span class="c">// 날씨 설명</span>
+  }],
+  <span class="p">"wind"</span>: { <span class="p">"speed"</span>: <span class="n">3.5</span> }    <span class="c">// 풍속 (m/s)</span>
+}
+
+<span class="c">// ─── Set 노드로 필요한 필드만 추출 ───</span>
+도시: <span class="b">{{ $json.name }}</span>
+기온: <span class="b">{{ $json.main.temp }}</span>
+날씨: <span class="b">{{ $json.weather[0].description }}</span>
+습도: <span class="b">{{ $json.main.humidity }}</span></pre>
+      </div>
+    </div>
+
+    <div class="explain exp-tip">
+      <span class="exp-icon">💡</span>
+      <span><strong>API 키 없이 테스트하려면:</strong> <code style="font-family:monospace;color:var(--cyan)">https://open.er-api.com/v6/latest/USD</code> 이 URL은 인증 없이 환율 데이터를 바로 가져올 수 있어요!</span>
+    </div>
+  </div>
+
+  <!-- 실습 7: 환율 API -->
+  <div class="example-section" style="margin-top:16px">
+    <div class="example-title">💱 실습 7 — 환율 API로 달러→원화 변환</div>
+    <div class="example-desc">
+      API 키가 필요 없는 무료 환율 API를 사용합니다. 응답에서 원하는 필드만 추출하는 방법도 함께 배웁니다.
+    </div>
+
+    <div class="code-block">
+      <div class="code-head"><span class="code-title">환율 API 전체 워크플로우</span><button class="copy-btn" onclick="copyCode(this)">COPY</button></div>
+      <div class="code-body"><pre><span class="c">// ① HTTP Request 노드</span>
+Method: <span class="k">GET</span>
+URL: <span class="s">https://open.er-api.com/v6/latest/USD</span>
+<span class="c">// API 키 불필요! 바로 실행 가능</span>
+
+<span class="c">// ② 응답 데이터 구조</span>
+{
+  <span class="p">"base_code"</span>: <span class="s">"USD"</span>,
+  <span class="p">"rates"</span>: {
+    <span class="p">"KRW"</span>: <span class="n">1452.5</span>,   <span class="c">// 달러→원화</span>
+    <span class="p">"EUR"</span>: <span class="n">0.924</span>,    <span class="c">// 달러→유로</span>
+    <span class="p">"JPY"</span>: <span class="n">157.3</span>     <span class="c">// 달러→엔화</span>
+  }
+}
+
+<span class="c">// ③ 원하는 필드 추출 (Set 노드 또는 Code 노드)</span>
+<span class="c">// 방법 A: Set 노드 표현식</span>
+달러_원화: <span class="b">{{ $json.rates.KRW }}</span>
+유로_원화: <span class="b">{{ Math.round($json.rates.KRW / $json.rates.EUR) }}</span>
+
+<span class="c">// 방법 B: Code 노드</span>
+<span class="k">const</span> rates = items[<span class="n">0</span>].json.rates;
+<span class="k">return</span> [{
+  json: {
+    USD_KRW: Math.round(rates.KRW),
+    EUR_KRW: Math.round(rates.KRW / rates.EUR),
+    JPY_KRW: Math.round(rates.KRW / rates.JPY * <span class="n">100</span>)
+  }
+}];</pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- 응답 데이터 필드 추출 -->
+  <div style="margin-top:20px">
+    <div class="section-head" style="margin-bottom:16px;border:none;padding-bottom:0">
+      <div style="font-family:'Sora',sans-serif;font-size:17px;font-weight:700">📤 응답 데이터에서 원하는 필드 추출하기</div>
+    </div>
+    <div class="explain exp-info">
+      <span class="exp-icon">💡</span>
+      <span>API 응답에는 필요 없는 데이터가 많습니다. Set 노드를 연결해서 필요한 필드만 골라내는 것이 좋은 습관이에요. HTTP Request 노드 OUTPUT 탭에서 실제 필드명을 확인하고 복사해서 쓰세요.</span>
+    </div>
+
+    <div class="code-block">
+      <div class="code-head"><span class="code-title">중첩 JSON에서 깊은 필드 접근</span><button class="copy-btn" onclick="copyCode(this)">COPY</button></div>
+      <div class="code-body"><pre><span class="c">// 응답 데이터 예시</span>
+{ <span class="p">"weather"</span>: [{ <span class="p">"description"</span>: <span class="s">"맑음"</span> }], <span class="p">"main"</span>: { <span class="p">"temp"</span>: <span class="n">15</span> } }
+
+<span class="c">// 배열 안의 값: [0]으로 첫 번째 요소 접근</span>
+<span class="b">{{ $json.weather[0].description }}</span>  → <span class="s">"맑음"</span>
+
+<span class="c">// 중첩 객체: . 점으로 계속 들어가기</span>
+<span class="b">{{ $json.main.temp }}</span>               → <span class="n">15</span>
+
+<span class="c">// 존재 여부 확인 후 접근 (안전한 접근)</span>
+<span class="b">{{ $json.main?.temp ?? '데이터 없음' }}</span>
+
+<span class="c">// 숫자 포맷팅</span>
+<span class="b">{{ $json.rates.KRW.toFixed(2) }}</span>     → <span class="s">"1452.50"</span>
+<span class="b">{{ Math.round($json.rates.KRW).toLocaleString() }}</span>  → <span class="s">"1,453"</span></pre>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ═══════════════════════════════════════ -->
+<!-- SECTION 6: Set & Code & Loop          -->
+<!-- ═══════════════════════════════════════ -->
+<div class="section" id="setcode">
+  <div class="section-head">
+    <div class="section-icon si-orange">⚙️</div>
+    <div>
+      <h2>데이터 가공 노드: Set & Code & Loop</h2>
+      <div class="section-sub">데이터를 추가·변경·삭제하고 대량 처리까지</div>
+    </div>
+  </div>
+
+  <!-- Set 노드 -->
+  <div style="margin-bottom:28px">
+    <div class="section-head" style="border:none;padding-bottom:0;margin-bottom:16px">
+      <div class="section-icon si-green" style="width:32px;height:32px;font-size:16px">📝</div>
+      <div style="font-family:'Sora',sans-serif;font-size:18px;font-weight:700">Set 노드 (Edit Fields) — 필드 추가 / 값 변경</div>
+    </div>
+
+    <div class="concept-grid">
+      <div class="concept-card">
+        <div class="cc-label">새 필드 추가</div>
+        <h3>없던 데이터를 만들기</h3>
+        <p>기존 데이터에 없는 새로운 필드를 추가합니다.<br>예: API에서 온 데이터에 <span class="highlight">수집시간</span> 필드 추가</p>
+      </div>
+      <div class="concept-card">
+        <div class="cc-label">Edit Fields (Set)</div>
+        <h3>불필요한 필드 제거</h3>
+        <p>"Keep Only Set Fields" 옵션을 ON 하면 설정한 필드만 남기고 나머지를 모두 삭제합니다. 깔끔한 데이터 정리에 유용해요.</p>
+      </div>
+    </div>
+
+    <div class="code-block">
+      <div class="code-head"><span class="code-title">Set 노드 활용 패턴</span><button class="copy-btn" onclick="copyCode(this)">COPY</button></div>
+      <div class="code-body"><pre><span class="c">// ─── 패턴 1: 필드 추가 ───</span>
+수집시간: <span class="b">{{ $now.format('yyyy-MM-dd HH:mm') }}</span>
+처리상태: <span class="s">"완료"</span>
+환경: <span class="s">"production"</span>
+
+<span class="c">// ─── 패턴 2: 기존 필드 변환 ───</span>
+가격_부가세포함: <span class="b">{{ Math.round($json.가격 * 1.1) }}</span>
+이름_전체: <span class="b">{{ $json.성 + " " + $json.이름 }}</span>
+
+<span class="c">// ─── 패턴 3: 조건부 값 설정 ───</span>
+등급: <span class="b">{{ $json.점수 >= 90 ? "VIP" : "일반" }}</span>
+메시지: <span class="b">{{ $json.재고 > 0 ? "재고있음" : "품절" }}</span>
+
+<span class="c">// ─── 패턴 4: Keep Only Set Fields ON ───</span>
+<span class="c">// 이 필드들만 남기고 나머지 전부 삭제</span>
+이름: <span class="b">{{ $json.이름 }}</span>
+이메일: <span class="b">{{ $json.이메일 }}</span>
+<span class="c">// → API 응답의 수십 개 필드 중 2개만 유지</span></pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- Code 노드 -->
+  <div style="margin-bottom:28px">
+    <div class="section-head" style="border:none;padding-bottom:0;margin-bottom:16px">
+      <div class="section-icon si-blue" style="width:32px;height:32px;font-size:16px">💻</div>
+      <div style="font-family:'Sora',sans-serif;font-size:18px;font-weight:700">Code 노드 — JavaScript로 자유롭게 처리</div>
+    </div>
+
+    <div class="explain exp-info">
+      <span class="exp-icon">💡</span>
+      <span><strong>언제 Code 노드를 쓰나요?</strong> Set 노드로 해결하기 복잡한 경우에 씁니다. 여러 필드를 동시에 계산하거나, 배열을 가공하거나, 조건 분기가 많을 때 특히 유용해요.</span>
+    </div>
+
+    <div class="code-block">
+      <div class="code-head"><span class="code-title">실습 8 — 이름+성 합치기 & 날짜 포맷 변경</span><button class="copy-btn" onclick="copyCode(this)">COPY</button></div>
+      <div class="code-body"><pre><span class="c">// ─── Code 노드 기본 구조 ───</span>
+<span class="k">for</span> (<span class="k">const</span> item <span class="k">of</span> items) {
+  <span class="c">// item.json 에 현재 아이템 데이터가 있음</span>
+
+  <span class="c">// 이름 합치기</span>
+  item.json.전체이름 = item.json.성 + <span class="s">" "</span> + item.json.이름;
+
+  <span class="c">// 이메일에서 도메인 추출</span>
+  item.json.도메인 = item.json.이메일.split(<span class="s">"@"</span>)[<span class="n">1</span>];
+
+  <span class="c">// 날짜 포맷: "2025-01-15" → "2025년 01월 15일"</span>
+  <span class="k">const</span> [y, m, d] = item.json.입사일.split(<span class="s">"-"</span>);
+  item.json.입사일_한국형 = <span class="s">`${y}년 ${m}월 ${d}일`</span>;
+
+  <span class="c">// 가격에 부가세 추가 & 천단위 포맷</span>
+  <span class="k">const</span> vat = Math.round(item.json.가격 * <span class="n">1.1</span>);
+  item.json.가격_부가세 = vat.toLocaleString() + <span class="s">"원"</span>;
+}
+
+<span class="k">return</span> items; <span class="c">// ← 반드시 마지막에 return items!</span></pre>
+      </div>
+    </div>
+
+    <div class="code-block">
+      <div class="code-head"><span class="code-title">Code 노드 — 점수별 등급 자동 분류</span><button class="copy-btn" onclick="copyCode(this)">COPY</button></div>
+      <div class="code-body"><pre><span class="k">for</span> (<span class="k">const</span> item <span class="k">of</span> items) {
+  <span class="k">const</span> score = item.json.점수;
+
+  <span class="c">// 조건 분류</span>
+  <span class="k">if</span> (score >= <span class="n">90</span>) {
+    item.json.등급 = <span class="s">"A"</span>;
+    item.json.메시지 = <span class="s">"매우 우수 🏅"</span>;
+  } <span class="k">else if</span> (score >= <span class="n">80</span>) {
+    item.json.등급 = <span class="s">"B"</span>;
+    item.json.메시지 = <span class="s">"우수 👍"</span>;
+  } <span class="k">else if</span> (score >= <span class="n">60</span>) {
+    item.json.등급 = <span class="s">"C"</span>;
+    item.json.메시지 = <span class="s">"양호"</span>;
+  } <span class="k">else</span> {
+    item.json.등급 = <span class="s">"F"</span>;
+    item.json.메시지 = <span class="s">"재시험 필요 😢"</span>;
+  }
+
+  <span class="c">// 부가세 계산도 함께</span>
+  item.json.부가세포함가격 = Math.round(item.json.price * <span class="n">1.1</span>);
+}
+
+<span class="k">return</span> items;</pre>
+      </div>
+    </div>
+
+    <div class="explain exp-warn">
+      <span class="exp-icon">⚠️</span>
+      <span><strong>자주 하는 실수 — return items 빠뜨리기:</strong> Code 노드 마지막에 반드시 <code style="font-family:monospace;color:var(--cyan)">return items;</code>를 써야 합니다. 없으면 노드 실행이 실패해요. 디버깅 시엔 <code style="font-family:monospace;color:var(--cyan)">console.log(item.json.값)</code>으로 Execution 로그에서 값을 확인할 수 있습니다.</span>
+    </div>
+  </div>
+
+  <!-- Loop 노드 -->
+  <div>
+    <div class="section-head" style="border:none;padding-bottom:0;margin-bottom:16px">
+      <div class="section-icon si-orange" style="width:32px;height:32px;font-size:16px">🔄</div>
+      <div style="font-family:'Sora',sans-serif;font-size:18px;font-weight:700">Loop 노드 (SplitInBatches) — 대량 데이터 처리</div>
+    </div>
+
+    <div class="concept-grid">
+      <div class="concept-card">
+        <div class="cc-label">언제 쓰나요?</div>
+        <h3>API 속도 제한 대응</h3>
+        <p>API는 보통 분당 호출 횟수 제한(Rate Limit)이 있어요. 100개 아이템을 한번에 처리하면 오류가 납니다. <span class="highlight">10개씩 끊어서</span> 처리하면 안전해요.</p>
+      </div>
+      <div class="concept-card">
+        <div class="cc-label">동작 원리</div>
+        <h3>배치 단위로 순차 처리</h3>
+        <p>아이템 리스트를 설정한 크기로 나눠서 순서대로 처리합니다. 마지막 처리 노드를 다시 SplitInBatches에 연결하면 루프가 완성됩니다.</p>
+      </div>
+    </div>
+
+    <div class="code-block">
+      <div class="code-head"><span class="code-title">실습 9 — 10개 아이템 배치 처리 & Wait 노드 조합</span><button class="copy-btn" onclick="copyCode(this)">COPY</button></div>
+      <div class="code-body"><pre><span class="c">// ─── SplitInBatches 노드 설정 ───</span>
+Batch Size: <span class="n">5</span>       <span class="c">// 한 번에 5개씩 처리</span>
+Reset: Off          <span class="c">// Off = 루프 끝나면 멈춤</span>
+
+<span class="c">// ─── 워크플로우 구조 ───</span>
+[아이템 10개 입력]
+    ↓
+SplitInBatches (5개씩)
+    ↓
+HTTP Request (API 호출)   <span class="c">← 배치 1: 아이템 1~5</span>
+    ↓
+Wait 노드 (1초 대기)       <span class="c">← Rate Limit 방지</span>
+    ↓
+SplitInBatches (루프 연결) <span class="c">← 배치 2: 아이템 6~10</span>
+    ↓ (모든 배치 완료)
+Merge 노드               <span class="c">← 결과 합치기</span>
+    ↓
+Google Sheets 저장
+
+<span class="c">// ─── Wait 노드 설정 ───</span>
+Amount: <span class="n">1</span>
+Unit: Seconds            <span class="c">// 1초 대기 후 다음 배치</span>
+
+<span class="c">// ─── 언제 필요한가? ───</span>
+<span class="c">// OpenAI API: 분당 60회 제한</span>
+<span class="c">// 네이버 API: 초당 10회 제한</span>
+<span class="c">// Notion API: 초당 3회 제한</span></pre>
+      </div>
+    </div>
+
+    <div class="explain exp-ok">
+      <span class="exp-icon">✅</span>
+      <span><strong>Loop 없이도 되는 경우:</strong> 아이템이 적고(10개 미만) API 제한이 없다면 Loop 없이 바로 처리해도 됩니다. Loop는 대량 처리(50개 이상)나 API 속도 제한이 있을 때만 사용하세요.</span>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ═══════════════════════════════════════ -->
+<!-- SECTION 7: 실습 예제 (인터랙티브)       -->
+<!-- ═══════════════════════════════════════ -->
+<div class="section" id="examples">
+  <div class="section-head">
+    <div class="section-icon si-blue">🧪</div>
+    <div>
+      <h2>직접 해보는 실습 예제</h2>
+      <div class="section-sub">값을 입력하고 N8N 노드가 어떻게 동작하는지 확인해보세요</div>
+    </div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs" style="flex-wrap:wrap">
+    <button class="tab-btn on" onclick="showTab(this,'ex1')">실습1 합격판정</button>
+    <button class="tab-btn" onclick="showTab(this,'ex2')">실습2 등급분류</button>
+    <button class="tab-btn" onclick="showTab(this,'ex3')">실습3 표현식</button>
+    <button class="tab-btn" onclick="showTab(this,'ex4')">실습4 요일분기</button>
+    <button class="tab-btn" onclick="showTab(this,'ex5')">실습5 API응답파싱</button>
+    <button class="tab-btn" onclick="showTab(this,'ex6')">실습6 Code가공</button>
+  </div>
+
+  <!-- 실습 1: 합격/불합격 -->
+  <div class="tab-pane on" id="ex1">
+    <div class="example-section">
+      <div class="example-title">📝 실습 4 — IF 노드: 점수가 60 이상이면 "합격" 분기</div>
+      <div class="example-desc">
+        N8N에서 Set 노드로 점수 데이터를 만들고, IF 노드로 합격/불합격을 나누는 기본 패턴입니다.<br>
+        아래에서 점수와 출석 여부를 입력해보세요.
+      </div>
+
+      <div class="playground">
+        <div class="pg-title">▶ 시뮬레이터</div>
+        <div class="field-row">
+          <span class="field-label">이름</span>
+          <input class="field-input" type="text" id="p1-name" value="홍길동">
+        </div>
+        <div class="field-row">
+          <span class="field-label">점수</span>
+          <input class="field-input" type="number" id="p1-score" value="75" min="0" max="100">
+          <span style="font-size:13px;color:var(--muted)">(0 ~ 100)</span>
+        </div>
+        <div class="field-row">
+          <span class="field-label">출석</span>
+          <select class="field-select" id="p1-attend">
+            <option value="true">출석 ✓</option>
+            <option value="false">결석 ✗</option>
+          </select>
+        </div>
+        <div class="field-row">
+          <span class="field-label">IF 조건</span>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--cyan)">점수 ≥ 60 AND 출석 = true</span>
+        </div>
+        <button class="run-btn" onclick="runEx1()">▶ 실행</button>
+
+        <div id="r1" class="result-box">
+          <div class="result-path" id="r1-path"></div>
+          <div class="result-value" id="r1-value"></div>
+          <div id="r1-data" style="margin-top:10px;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--muted)"></div>
+        </div>
+      </div>
+
+      <!-- N8N 설정 코드 -->
+      <div class="code-block">
+        <div class="code-head"><span class="code-title">N8N 실제 설정 방법</span><button class="copy-btn" onclick="copyCode(this)">COPY</button></div>
+        <div class="code-body"><pre><span class="c">// ① Set 노드: 테스트 데이터 만들기</span>
+이름: <span class="s">"홍길동"</span>
+점수: <span class="n">75</span>
+출석: <span class="t">true</span>
+
+<span class="c">// ② IF 노드 조건 설정</span>
+Add Condition → AND
+
+Condition 1:
+  Value 1: <span class="b">{{ $json.점수 }}</span>
+  Operation: <span class="op">Larger or Equal</span>
+  Value 2: <span class="n">60</span>
+
+Condition 2:
+  Value 1: <span class="b">{{ $json.출석 }}</span>
+  Operation: <span class="op">Equal</span>
+  Value 2: <span class="t">true</span>
+
+<span class="c">// ③ TRUE 출력 → Set 노드: 결과 = "합격"</span>
+<span class="c">// ④ FALSE 출력 → Set 노드: 결과 = "불합격"</span></pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 실습 2: 등급 분류 -->
+  <div class="tab-pane" id="ex2">
+    <div class="example-section">
+      <div class="example-title">🏆 실습 5 — Switch 노드: 점수 등급 분류</div>
+      <div class="example-desc">
+        Switch 노드로 점수를 A~F 5단계 등급으로 분류합니다.<br>
+        각 등급마다 다른 처리(메시지, 이메일 등)를 연결할 수 있어요.
+      </div>
+
+      <div class="playground">
+        <div class="pg-title">▶ 시뮬레이터</div>
+        <div class="field-row">
+          <span class="field-label">이름</span>
+          <input class="field-input" type="text" id="p2-name" value="김영희">
+        </div>
+        <div class="field-row">
+          <span class="field-label">점수</span>
+          <input class="field-input" type="number" id="p2-score" value="88" min="0" max="100">
+          <span style="font-size:13px;color:var(--muted)">A:90+ / B:80+ / C:70+ / D:60+ / F:60미만</span>
+        </div>
+        <button class="run-btn" onclick="runEx2()">▶ 실행</button>
+
+        <div id="r2" class="result-box">
+          <div class="result-path" id="r2-path"></div>
+          <div class="result-value" id="r2-value"></div>
+          <div id="r2-switch" class="switch-viz" style="margin-top:12px"></div>
+        </div>
+      </div>
+
+      <div class="code-block">
+        <div class="code-head"><span class="code-title">Switch 노드 설정</span><button class="copy-btn" onclick="copyCode(this)">COPY</button></div>
+        <div class="code-body"><pre><span class="c">// Switch 노드 — Mode: Rules</span>
+
+Rule 1: <span class="b">{{ $json.점수 }}</span> <span class="op">&gt;=</span> <span class="n">90</span>  → Output 0
+  → Set 노드: 등급=<span class="s">"A"</span>, 메시지=<span class="s">"매우 우수합니다! 🏅"</span>
+
+Rule 2: <span class="b">{{ $json.점수 }}</span> <span class="op">&gt;=</span> <span class="n">80</span>  → Output 1
+  → Set 노드: 등급=<span class="s">"B"</span>, 메시지=<span class="s">"우수합니다! 👍"</span>
+
+Rule 3: <span class="b">{{ $json.점수 }}</span> <span class="op">&gt;=</span> <span class="n">70</span>  → Output 2
+  → Set 노드: 등급=<span class="s">"C"</span>, 메시지=<span class="s">"양호합니다."</span>
+
+Rule 4: <span class="b">{{ $json.점수 }}</span> <span class="op">&gt;=</span> <span class="n">60</span>  → Output 3
+  → Set 노드: 등급=<span class="s">"D"</span>, 메시지=<span class="s">"조금 더 노력하세요."</span>
+
+Fallback                   → Output 4
+  → Set 노드: 등급=<span class="s">"F"</span>, 메시지=<span class="s">"보충수업 필요합니다. 😢"</span></pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 실습 3: 표현식 연습 -->
+  <div class="tab-pane" id="ex3">
+    <div class="example-section">
+      <div class="example-title">✨ 표현식 — JSON 데이터에서 원하는 값 뽑기</div>
+      <div class="example-desc">
+        아래 JSON 데이터가 있다고 가정했을 때,<br>각 표현식이 어떤 값을 출력하는지 직접 확인해보세요.
+      </div>
+
+      <div class="playground">
+        <div class="pg-title">▶ 입력 데이터 (JSON)</div>
+        <div class="code-block" style="margin:0">
+          <div class="code-body"><pre id="ex3-json">{
+  <span class="p">"이름"</span>: <span class="s">"이철수"</span>,
+  <span class="p">"나이"</span>: <span class="n">28</span>,
+  <span class="p">"가격"</span>: <span class="n">45000</span>,
+  <span class="p">"태그"</span>: [<span class="s">"무역"</span>, <span class="s">"IT"</span>, <span class="s">"자동화"</span>],
+  <span class="p">"주소"</span>: { <span class="p">"시"</span>: <span class="s">"부산"</span>, <span class="p">"구"</span>: <span class="s">"해운대구"</span> }
+}</pre>
+          </div>
+        </div>
+
+        <div style="margin-top:16px">
+          <div class="field-row" style="margin-bottom:8px">
+            <span class="field-label">표현식</span>
+            <input class="field-input" type="text" id="p3-expr" value="{{ $json.이름 }}" style="width:280px">
+            <button class="run-btn" onclick="runEx3()" style="padding:8px 18px;font-size:13px">실행</button>
+          </div>
+          <div style="font-size:12px;color:var(--muted)">
+            💡 테스트: <code style="font-family:monospace;color:var(--cyan)">{{ $json.태그[0] }}</code> &nbsp;|&nbsp; <code style="font-family:monospace;color:var(--cyan)">{{ $json.주소.시 }}</code> &nbsp;|&nbsp; <code style="font-family:monospace;color:var(--cyan)">{{ $json.가격 * 1.1 }}</code>
+          </div>
+        </div>
+
+        <div id="r3" class="result-box">
+          <div class="result-path" id="r3-path"></div>
+          <div class="result-value" id="r3-value" style="font-family:'JetBrains Mono',monospace;font-size:16px"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 실습 4: 요일 분기 -->
+  <div class="tab-pane" id="ex4">
+    <div class="example-section">
+      <div class="example-title">📅 실습 5 — Switch 노드: 요일에 따른 메시지 분기</div>
+      <div class="example-desc">
+        오늘 요일에 따라 다른 메시지를 보내는 자동화입니다.<br>
+        실무에서는 "월요일엔 주간 보고서, 금요일엔 주간 정리" 같은 패턴으로 씁니다.
+      </div>
+
+      <div class="playground">
+        <div class="pg-title">▶ 시뮬레이터</div>
+        <div class="field-row">
+          <span class="field-label">요일 선택</span>
+          <select class="field-select" id="p4-day">
+            <option value="월요일">월요일</option>
+            <option value="화요일">화요일</option>
+            <option value="수요일">수요일</option>
+            <option value="목요일">목요일</option>
+            <option value="금요일" selected>금요일</option>
+            <option value="토요일">토요일</option>
+            <option value="일요일">일요일</option>
+          </select>
+        </div>
+        <button class="run-btn" onclick="runEx4()">▶ 실행</button>
+
+        <div id="r4" class="result-box">
+          <div class="result-path" id="r4-path"></div>
+          <div class="result-value" id="r4-value"></div>
+          <div id="r4-switch" class="switch-viz" style="margin-top:12px"></div>
+        </div>
+      </div>
+
+      <div class="code-block">
+        <div class="code-head"><span class="code-title">N8N 전체 워크플로우</span><button class="copy-btn" onclick="copyCode(this)">COPY</button></div>
+        <div class="code-body"><pre><span class="c">// ① Schedule Trigger — 매일 오전 9시</span>
+
+<span class="c">// ② Code 노드 — 오늘 요일 가져오기</span>
+<span class="k">const</span> days = [<span class="s">'일요일'</span>,<span class="s">'월요일'</span>,<span class="s">'화요일'</span>,<span class="s">'수요일'</span>,
+               <span class="s">'목요일'</span>,<span class="s">'금요일'</span>,<span class="s">'토요일'</span>];
+<span class="k">const</span> today = days[<span class="k">new</span> Date().getDay()];
+<span class="k">return</span> [{ json: { 요일: today } }];
+
+<span class="c">// ③ Switch 노드</span>
+Rule 1: <span class="b">{{ $json.요일 }}</span> = <span class="s">"월요일"</span>  → <span class="s">"📋 주간업무 계획 공유 시간"</span>
+Rule 2: <span class="b">{{ $json.요일 }}</span> = <span class="s">"수요일"</span>  → <span class="s">"☕ 미드위크 체크인"</span>
+Rule 3: <span class="b">{{ $json.요일 }}</span> = <span class="s">"금요일"</span>  → <span class="s">"🎉 주간 정리 & 회고"</span>
+Fallback                          → <span class="s">"📌 오늘도 파이팅!"</span>
+
+<span class="c">// ④ 각 출력 → Telegram Send Message</span></pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 실습 5: API 응답 파싱 -->
+  <div class="tab-pane" id="ex5">
+    <div class="example-section">
+      <div class="example-title">🌐 실습 6&7 — API 응답에서 원하는 필드 추출</div>
+      <div class="example-desc">
+        날씨 또는 환율 API의 응답 JSON이 있다고 가정하고,<br>
+        원하는 필드를 표현식으로 정확히 꺼내는 연습입니다.
+      </div>
+
+      <div class="playground">
+        <div class="pg-title">▶ 시뮬레이터 — API 종류 선택</div>
+        <div class="field-row">
+          <span class="field-label">API 종류</span>
+          <select class="field-select" id="p5-type" onchange="updateP5()">
+            <option value="weather">날씨 API (OpenWeatherMap)</option>
+            <option value="exchange">환율 API (open.er-api.com)</option>
+          </select>
+        </div>
+        <div id="p5-json-preview" class="code-block" style="margin:12px 0;max-height:160px;overflow-y:auto">
+          <div class="code-body"><pre id="p5-json-text" style="font-size:12px"></pre></div>
+        </div>
+        <div class="field-row">
+          <span class="field-label">표현식</span>
+          <input class="field-input" type="text" id="p5-expr" style="width:300px" value="{{ $json.main.temp }}">
+          <button class="run-btn" onclick="runEx5()">▶ 실행</button>
+        </div>
+        <div id="p5-hints" style="font-size:12px;color:var(--muted);margin-top:6px"></div>
+        <div id="r5" class="result-box">
+          <div class="result-path" id="r5-path"></div>
+          <div class="result-value" id="r5-value" style="font-family:'JetBrains Mono',monospace;font-size:16px"></div>
+        </div>
+      </div>
+
+      <div class="code-block">
+        <div class="code-head"><span class="code-title">N8N — Set 노드로 API 응답 필드 정리</span><button class="copy-btn" onclick="copyCode(this)">COPY</button></div>
+        <div class="code-body"><pre><span class="c">// 날씨 API 응답 → Set 노드에서 필요한 것만 추출</span>
+도시:     <span class="b">{{ $json.name }}</span>
+기온:     <span class="b">{{ $json.main.temp }}</span>
+체감기온: <span class="b">{{ $json.main.feels_like }}</span>
+날씨:     <span class="b">{{ $json.weather[0].description }}</span>
+습도:     <span class="b">{{ $json.main.humidity }}</span>
+풍속:     <span class="b">{{ $json.wind.speed }}</span>
+수집시간: <span class="b">{{ $now.format('yyyy-MM-dd HH:mm') }}</span>
+
+<span class="c">// 환율 API 응답 → Set 노드에서 교차환율 계산</span>
+USD_KRW: <span class="b">{{ Math.round($json.rates.KRW) }}</span>
+EUR_KRW: <span class="b">{{ Math.round($json.rates.KRW / $json.rates.EUR) }}</span>
+JPY_KRW: <span class="b">{{ Math.round($json.rates.KRW / $json.rates.JPY * 100) }}</span></pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 실습 6: Code 노드 가공 -->
+  <div class="tab-pane" id="ex6">
+    <div class="example-section">
+      <div class="example-title">⚙️ 실습 8 — Code 노드: 이름 합치기 & 날짜 포맷 변경</div>
+      <div class="example-desc">
+        Code 노드에서 JavaScript로 데이터를 자유롭게 가공하는 시뮬레이터입니다.<br>
+        아래 입력값을 바꾸면 Code 노드가 어떻게 처리하는지 확인할 수 있어요.
+      </div>
+
+      <div class="playground">
+        <div class="pg-title">▶ 시뮬레이터 — 입력 데이터</div>
+        <div class="field-row">
+          <span class="field-label">성</span>
+          <input class="field-input" type="text" id="p6-last" value="홍" style="width:80px">
+          <span class="field-label" style="margin-left:8px">이름</span>
+          <input class="field-input" type="text" id="p6-first" value="길동" style="width:100px">
+        </div>
+        <div class="field-row">
+          <span class="field-label">이메일</span>
+          <input class="field-input" type="text" id="p6-email" value="hong@gmail.com" style="width:200px">
+        </div>
+        <div class="field-row">
+          <span class="field-label">입사일</span>
+          <input class="field-input" type="text" id="p6-date" value="2023-06-15" style="width:140px">
+          <span style="font-size:12px;color:var(--muted);margin-left:8px">YYYY-MM-DD 형식</span>
+        </div>
+        <div class="field-row">
+          <span class="field-label">가격</span>
+          <input class="field-input" type="number" id="p6-price" value="50000" style="width:120px">
+          <span style="font-size:12px;color:var(--muted);margin-left:8px">원 (부가세 10% 자동 계산)</span>
+        </div>
+        <button class="run-btn" onclick="runEx6()">▶ Code 노드 실행</button>
+
+        <div id="r6" class="result-box rb-neutral" style="display:none">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--muted);margin-bottom:12px">OUTPUT — Code 노드 결과</div>
+          <div id="r6-output"></div>
+        </div>
+      </div>
+
+      <div class="code-block">
+        <div class="code-head"><span class="code-title">실제 Code 노드 코드</span><button class="copy-btn" onclick="copyCode(this)">COPY</button></div>
+        <div class="code-body"><pre><span class="k">for</span> (<span class="k">const</span> item <span class="k">of</span> items) {
+  <span class="c">// 이름 합치기</span>
+  item.json.전체이름 = item.json.성 + <span class="s">" "</span> + item.json.이름;
+
+  <span class="c">// 이메일에서 도메인 추출</span>
+  item.json.도메인 = item.json.이메일.split(<span class="s">"@"</span>)[<span class="n">1</span>];
+
+  <span class="c">// 날짜 포맷: "2023-06-15" → "2023년 06월 15일"</span>
+  <span class="k">const</span> [y, m, d] = item.json.입사일.split(<span class="s">"-"</span>);
+  item.json.입사일_한국형 = <span class="s">`${y}년 ${m}월 ${d}일`</span>;
+
+  <span class="c">// 부가세 포함 가격 계산</span>
+  <span class="k">const</span> vat = Math.round(item.json.가격 * <span class="n">1.1</span>);
+  item.json.가격_부가세 = vat.toLocaleString() + <span class="s">"원"</span>;
+  item.json.부가세금액 = (vat - item.json.가격).toLocaleString() + <span class="s">"원"</span>;
+}
+
+<span class="k">return</span> items;</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /section examples -->
+
+</div><!-- /wrap -->
+
+<!-- FOOTER -->
+<div style="text-align:center;padding:32px;border-top:1px solid var(--border);position:relative;z-index:1">
+  <p style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);letter-spacing:2px">N8N · JSON · EXPRESSION · IF · SWITCH · HTTP API · SET · CODE · LOOP</p>
+</div>
+
+<script>
+// NAV
+function navTo(el, id){
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  el.classList.add('active');
+  const target = document.getElementById(id);
+  if(!target) return;
+  const navH = document.querySelector('nav').offsetHeight;
+  const top = target.getBoundingClientRect().top + window.scrollY - navH - 16;
+  window.scrollTo({top, behavior:'smooth'});
+}
+
+// TAB
+function showTab(btn, id){
+  btn.closest('.section').querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('on'));
+  btn.closest('.section').querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('on'));
+  btn.classList.add('on');
+  document.getElementById(id).classList.add('on');
+}
+
+// COPY
+function copyCode(btn){
+  const pre = btn.closest('.code-block').querySelector('pre');
+  navigator.clipboard.writeText(pre.innerText).then(()=>{
+    btn.textContent='COPIED!'; btn.classList.add('copied');
+    setTimeout(()=>{btn.textContent='COPY';btn.classList.remove('copied');},2000);
+  });
+}
+
+// ─── 실습 1: 합격/불합격 ───
+function runEx1(){
+  const name = document.getElementById('p1-name').value;
+  const score = Number(document.getElementById('p1-score').value);
+  const attend = document.getElementById('p1-attend').value === 'true';
+
+  const pass = score >= 60 && attend;
+  const r = document.getElementById('r1');
+  const rPath = document.getElementById('r1-path');
+  const rVal = document.getElementById('r1-value');
+  const rData = document.getElementById('r1-data');
+
+  r.className = 'result-box show ' + (pass ? 'rb-true' : 'rb-false');
+  rPath.style.color = pass ? 'var(--green)' : 'var(--red)';
+  rPath.innerHTML = pass
+    ? '▶ TRUE 경로 → 합격 처리'
+    : '▶ FALSE 경로 → 불합격 처리';
+  rVal.style.color = pass ? 'var(--green)' : 'var(--red)';
+  rVal.innerHTML = pass
+    ? `🎉 ${name}님 — <strong>합격!</strong> (${score}점, 출석 ${attend?'✓':'✗'})`
+    : `😢 ${name}님 — <strong>불합격</strong> (${score}점, 출석 ${attend?'✓':'✗'})`;
+
+  const reason = [];
+  if(score < 60) reason.push(`점수 ${score} < 60`);
+  if(!attend) reason.push('출석 미확인');
+  rData.textContent = reason.length ? '불합격 사유: ' + reason.join(', ') : '모든 조건 충족';
+}
+
+// ─── 실습 2: 등급 분류 ───
+function runEx2(){
+  const name = document.getElementById('p2-name').value;
+  const score = Number(document.getElementById('p2-score').value);
+
+  let grade, msg, output;
+  const rules = [
+    {cond: score>=90, grade:'A', msg:'매우 우수합니다! 🏅', out:'Output 0'},
+    {cond: score>=80, grade:'B', msg:'우수합니다! 👍', out:'Output 1'},
+    {cond: score>=70, grade:'C', msg:'양호합니다.', out:'Output 2'},
+    {cond: score>=60, grade:'D', msg:'조금 더 노력하세요.', out:'Output 3'},
+    {cond: true, grade:'F', msg:'보충수업 필요합니다. 😢', out:'Output 4 (Fallback)'},
+  ];
+
+  const matched = rules.find(r=>r.cond);
+
+  const r = document.getElementById('r2');
+  r.className = 'result-box show rb-neutral';
+  document.getElementById('r2-path').innerHTML =
+    `<span style="color:var(--cyan)">▶ ${matched.out} 선택됨</span>`;
+  document.getElementById('r2-value').innerHTML =
+    `${name}님 ${score}점 → <span style="color:var(--purple);font-size:20px;font-weight:900">등급 ${matched.grade}</span> · ${matched.msg}`;
+
+  const sw = document.getElementById('r2-switch');
+  const labels = ['≥ 90 → A','≥ 80 → B','≥ 70 → C','≥ 60 → D','Fallback → F'];
+  const conds = [score>=90, score>=80, score>=70, score>=60, true];
+  sw.innerHTML = labels.map((l,i)=>{
+    const isMatch = matched.grade === ['A','B','C','D','F'][i];
+    return `<div class="sw-rule ${isMatch?'active-rule':''}">
+      <span class="sw-check">${isMatch?'✅':'⬜'}</span>
+      <span class="sw-arrow">Rule ${i+1}:</span>
+      <span class="sw-output" style="${isMatch?'color:var(--cyan)':''}">${l}</span>
+    </div>`;
+  }).join('');
+}
+
+// ─── 실습 3: 표현식 ───
+function runEx3(){
+  const data = {
+    이름: "이철수", 나이: 28, 가격: 45000,
+    태그: ["무역","IT","자동화"],
+    주소: {시:"부산", 구:"해운대구"}
+  };
+
+  let expr = document.getElementById('p3-expr').value;
+  const r = document.getElementById('r3');
+  const rPath = document.getElementById('r3-path');
+  const rVal = document.getElementById('r3-value');
+
+  try {
+    let code = expr.replace(/\{\{\s*/g,'').replace(/\s*\}\}/g,'');
+    // Replace $json with data reference
+    code = code.replace(/\$json\./g,'data.');
+    let result = eval(code);
+    if(Array.isArray(result)) result = JSON.stringify(result);
+
+    r.className = 'result-box show rb-ok';
+    rPath.style.color = 'var(--green)';
+    rPath.innerHTML = `▶ 표현식 실행 성공: <span style="color:var(--cyan)">${expr}</span>`;
+    rVal.textContent = '결과값: ' + result;
+    rVal.style.color = 'var(--green)';
+  } catch(e) {
+    r.className = 'result-box show rb-false';
+    rPath.style.color = 'var(--red)';
+    rPath.innerHTML = '▶ 표현식 오류';
+    rVal.textContent = e.message;
+    rVal.style.color = 'var(--red)';
+  }
+}
+
+// ─── 실습 4: 요일 분기 ───
+function runEx4(){
+  const day = document.getElementById('p4-day').value;
+
+  const rules = [
+    {cond: day==='월요일', msg:'📋 주간 업무 계획을 공유합니다. 이번 주도 파이팅!', out:'Output 0'},
+    {cond: day==='수요일', msg:'☕ 미드위크 체크인! 이번 주 진행 상황은?', out:'Output 1'},
+    {cond: day==='금요일', msg:'🎉 한 주를 마무리합니다. 주간 정리 & 회고!', out:'Output 2'},
+    {cond: day==='토요일'||day==='일요일', msg:'🌿 오늘은 쉬는 날! 워크플로우는 휴무입니다.', out:'Output 3 (주말)'},
+    {cond: true, msg:'📌 오늘도 파이팅! 평범하지만 소중한 하루입니다.', out:'Output 4 (Fallback)'},
+  ];
+
+  const matched = rules.find(r=>r.cond);
+
+  const r = document.getElementById('r4');
+  r.className = 'result-box show rb-neutral';
+  document.getElementById('r4-path').innerHTML =
+    `<span style="color:var(--cyan)">▶ ${matched.out} 선택됨</span>`;
+  document.getElementById('r4-value').innerHTML =
+    `<strong>${day}</strong> → ${matched.msg}`;
+
+  const sw = document.getElementById('r4-switch');
+  const ruleLabels = [
+    {label:'월요일 =', d:'월요일'},
+    {label:'수요일 =', d:'수요일'},
+    {label:'금요일 =', d:'금요일'},
+    {label:'토/일요일 =', d:day==='토요일'||day==='일요일'?day:null},
+    {label:'Fallback', d:null},
+  ];
+
+  const activeIdx = rules.findIndex(r=>r.cond);
+  sw.innerHTML = ruleLabels.map((l,i)=>{
+    const isMatch = i === activeIdx;
+    return `<div class="sw-rule ${isMatch?'active-rule':''}">
+      <span class="sw-check">${isMatch?'✅':'⬜'}</span>
+      <span class="sw-arrow">Rule ${i<4?i+1:''}${i===4?' (Fallback)':''}:</span>
+      <span class="sw-output" style="${isMatch?'color:var(--cyan)':''}">${l.label} "${l.d||'...'}"`
+      + `</span>
+    </div>`;
+  }).join('');
+}
+
+// Active nav
+window.addEventListener('scroll',()=>{
+  const sections = ['json','expr','if','switch','http','setcode','examples'];
+  const navItems = document.querySelectorAll('.nav-item');
+  let current = 0;
+  sections.forEach((id,i)=>{
+    const el = document.getElementById(id);
+    if(el && el.getBoundingClientRect().top < 100) current = i;
+  });
+  navItems.forEach((n,i)=>n.classList.toggle('active',i===current));
+});
+
+// ─── 실습 5: API 응답 파싱 ───
+const p5Data = {
+  weather: {
+    name: "Seoul",
+    main: { temp: 15.3, humidity: 65, feels_like: 13.8 },
+    weather: [{ description: "맑음", main: "Clear" }],
+    wind: { speed: 3.5 },
+    sys: { country: "KR" }
+  },
+  exchange: {
+    result: "success",
+    base_code: "USD",
+    rates: { KRW: 1452.5, EUR: 0.924, JPY: 157.3, CNY: 7.24, GBP: 0.792 }
+  }
+};
+
+const p5Hints = {
+  weather: '💡 테스트: <code style="font-family:monospace;color:var(--cyan)">{{ $json.name }}</code> &nbsp;|&nbsp; <code style="font-family:monospace;color:var(--cyan)">{{ $json.main.humidity }}</code> &nbsp;|&nbsp; <code style="font-family:monospace;color:var(--cyan)">{{ $json.weather[0].description }}</code> &nbsp;|&nbsp; <code style="font-family:monospace;color:var(--cyan)">{{ $json.wind.speed }}</code>',
+  exchange: '💡 테스트: <code style="font-family:monospace;color:var(--cyan)">{{ $json.rates.KRW }}</code> &nbsp;|&nbsp; <code style="font-family:monospace;color:var(--cyan)">{{ $json.base_code }}</code> &nbsp;|&nbsp; <code style="font-family:monospace;color:var(--cyan)">{{ Math.round($json.rates.KRW / $json.rates.EUR) }}</code>'
+};
+
+function updateP5(){
+  const type = document.getElementById('p5-type').value;
+  const data = p5Data[type];
+  document.getElementById('p5-json-text').textContent = JSON.stringify(data, null, 2);
+  document.getElementById('p5-hints').innerHTML = p5Hints[type];
+  const defaults = { weather: '{{ $json.main.temp }}', exchange: '{{ $json.rates.KRW }}' };
+  document.getElementById('p5-expr').value = defaults[type];
+  document.getElementById('r5').className = 'result-box';
+}
+updateP5();
+
+function runEx5(){
+  const type = document.getElementById('p5-type').value;
+  const data = p5Data[type];
+  let expr = document.getElementById('p5-expr').value;
+  const r = document.getElementById('r5');
+  const rPath = document.getElementById('r5-path');
+  const rVal = document.getElementById('r5-value');
+  try {
+    let code = expr.replace(/\{\{\s*/g,'').replace(/\s*\}\}/g,'');
+    code = code.replace(/\$json\./g,'data.');
+    let result = eval(code);
+    if(typeof result === 'object') result = JSON.stringify(result);
+    r.className = 'result-box show rb-neutral';
+    rPath.style.color = 'var(--green)';
+    rPath.innerHTML = `▶ 표현식 성공: <span style="color:var(--cyan)">${expr}</span>`;
+    rVal.textContent = '결과값: ' + result;
+    rVal.style.color = 'var(--green)';
+  } catch(e) {
+    r.className = 'result-box show rb-false';
+    rPath.style.color = 'var(--red)';
+    rPath.innerHTML = '▶ 표현식 오류';
+    rVal.textContent = e.message;
+    rVal.style.color = 'var(--red)';
+  }
+}
+
+// ─── 실습 6: Code 노드 가공 ───
+function runEx6(){
+  const last = document.getElementById('p6-last').value;
+  const first = document.getElementById('p6-first').value;
+  const email = document.getElementById('p6-email').value;
+  const dateStr = document.getElementById('p6-date').value;
+  const price = Number(document.getElementById('p6-price').value);
+
+  const 전체이름 = last + ' ' + first;
+  const 도메인 = email.includes('@') ? email.split('@')[1] : '이메일 형식 오류';
+  const parts = dateStr.split('-');
+  const 입사일_한국형 = parts.length === 3 ? `${parts[0]}년 ${parts[1]}월 ${parts[2]}일` : '날짜 형식 오류';
+  const vat = Math.round(price * 1.1);
+  const 가격_부가세 = vat.toLocaleString() + '원';
+  const 부가세금액 = (vat - price).toLocaleString() + '원';
+
+  const r = document.getElementById('r6');
+  r.style.display = 'block';
+  r.className = 'result-box show rb-neutral';
+
+  const rows = [
+    ['전체이름', 전체이름, '성 + " " + 이름'],
+    ['도메인', 도메인, 'email.split("@")[1]'],
+    ['입사일_한국형', 입사일_한국형, 'YYYY-MM-DD → 한국형'],
+    ['가격_부가세', 가격_부가세, 'price * 1.1 반올림'],
+    ['부가세금액', 부가세금액, 'vat - 원래가격'],
+  ];
+
+  document.getElementById('r6-output').innerHTML = rows.map(([k,v,desc])=>`
+    <div style="display:flex;gap:16px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.05);align-items:center;flex-wrap:wrap">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--cyan);background:rgba(34,211,238,0.08);padding:3px 10px;border-radius:4px;min-width:110px">${k}</span>
+      <span style="font-weight:700;color:var(--green);font-size:15px;min-width:160px">${v}</span>
+      <span style="font-size:11px;color:var(--muted)">${desc}</span>
+    </div>`).join('');
+}
+</script>
+</body>
+</html>

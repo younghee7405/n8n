@@ -578,6 +578,40 @@
     line-height: 1.4;
   }
 
+  /* DAY GUIDE LINK */
+  .day-guide-link {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 1px;
+    padding: 7px 16px;
+    border-radius: 3px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--accent);
+    text-decoration: none;
+    white-space: nowrap;
+    transition: all 0.2s;
+    margin-left: 12px;
+  }
+
+  .day-guide-link:hover {
+    background: rgba(0,100,200,0.1);
+    border-color: var(--accent);
+    box-shadow: var(--glow);
+  }
+
+  .day-2 .day-guide-link { color: var(--accent2); border-color: rgba(107,33,212,0.3); }
+  .day-2 .day-guide-link:hover { background: rgba(107,33,212,0.08); border-color: var(--accent2); box-shadow: 0 0 14px rgba(107,33,212,0.2); }
+
+  .day-3 .day-guide-link { color: var(--green); border-color: rgba(0,131,74,0.3); }
+  .day-3 .day-guide-link:hover { background: rgba(0,131,74,0.08); border-color: var(--green); box-shadow: 0 0 14px rgba(0,131,74,0.2); }
+
+  .day-4 .day-guide-link { color: var(--accent3); border-color: rgba(201,74,16,0.3); }
+  .day-4 .day-guide-link:hover { background: rgba(201,74,16,0.08); border-color: var(--accent3); box-shadow: 0 0 14px rgba(201,74,16,0.2); }
+
+  .day-5 .day-guide-link { color: var(--yellow); border-color: rgba(176,120,0,0.3); }
+  .day-5 .day-guide-link:hover { background: rgba(176,120,0,0.08); border-color: var(--yellow); box-shadow: 0 0 14px rgba(176,120,0,0.2); }
+
   /* SCROLLBAR */
   ::-webkit-scrollbar { width: 6px; }
   ::-webkit-scrollbar-track { background: var(--bg); }
@@ -769,6 +803,7 @@
       <div class="day-info">
         <div class="day-title">🔧 핵심 노드 마스터 & 데이터 흐름 이해</div>
       </div>
+      <a class="day-guide-link" href="n8n_data_if_switch_guide.html" target="_blank" onclick="event.stopPropagation()">상세 가이드 →</a>
       <div class="toggle-icon">▼</div>
     </div>
     <div class="day-body">
@@ -854,6 +889,7 @@
       <div class="day-info">
         <div class="day-title">📊 구글 시트 자동화 완전 정복</div>
       </div>
+      <a class="day-guide-link" href="n8n_google_sheets_gmail_drive.html" target="_blank" onclick="event.stopPropagation()">상세 가이드 →</a>
       <div class="toggle-icon">▼</div>
     </div>
     <div class="day-body">
@@ -941,6 +977,7 @@
       <div class="day-info">
         <div class="day-title">🌐 Webhook & 외부 서비스 연동</div>
       </div>
+      <a class="day-guide-link" href="n8n_day4_webhook_telegram_error_subworkflow.html" target="_blank" onclick="event.stopPropagation()">상세 가이드 →</a>
       <div class="toggle-icon">▼</div>
     </div>
     <div class="day-body">
@@ -1026,6 +1063,7 @@
       <div class="day-info">
         <div class="day-title">🚀 실전 프로젝트 완성 & 배포</div>
       </div>
+      <a class="day-guide-link" href="n8n_day5_deploy_project_debug_present.html" target="_blank" onclick="event.stopPropagation()">상세 가이드 →</a>
       <div class="toggle-icon">▼</div>
     </div>
     <div class="day-body">
